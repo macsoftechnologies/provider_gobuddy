@@ -1,6 +1,6 @@
-# providerapp_gobuddy
+# gobuddy
 
-A new Flutter project.
+services
 
 ## Getting Started
 
