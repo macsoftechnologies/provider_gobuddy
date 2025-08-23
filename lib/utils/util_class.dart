@@ -8,9 +8,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svprogresshud/flutter_svprogresshud.dart';
-import 'package:gobuddy/utils/my_colors.dart';
+
 import 'package:gobuddy/utils/config.dart';
 import 'package:hexcolor/hexcolor.dart';
+
+import 'my_colors.dart';
 
 class UtilClass {
   static Widget getSizedBox(var valueHeight, valueWidth) {

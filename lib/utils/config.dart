@@ -216,4 +216,9 @@ class Config {
 
 
 // kk changes
+static const ekycRouteName='ekyc verification screen';//DashboardPage
+  static const dashboardcRouteName='dashboards screen'; //RegistrationSuccessPage
+  static const regiSuccessRouteName='Registration Success Page'; //RegistrationFeeScreen
+  static const regiFeeRouteName='Registration Fee Screen'; //PaymentMethodScreen
+  static const paymentMethodRouteName='Choose Payment method Screen';
 }

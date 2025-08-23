@@ -1,12 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:gobuddy/services/end_points.dart';
-import 'package:gobuddy/services/repository.dart';
-
-import 'package:gobuddy/utils/config.dart';
-import 'package:gobuddy/utils/my_colors.dart';
-import 'package:gobuddy/utils/util_class.dart';
+import 'package:flutter/services.dart'; // for input formatters
+import '../../../utils/my_colors.dart';
+import '../../../utils/config.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -14,10 +9,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  //final TextEditingController _phoneController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
   final TextEditingController _phoneController = TextEditingController();
   final FocusNode _phoneFocus = FocusNode();
+
+  String? _errorMessage; // to store error message
 
   @override
   void initState() {
@@ -28,34 +23,37 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _phoneFocus.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
+  /// Function that validates phone number when button clicked
+  void _validateAndSubmit() {
+    String phone = _phoneController.text.trim();
 
-  void callLoginAPI() async {
-    var internet = await UtilClass.checkInternet();
-    if (internet) {
-      // ignore: use_build_context_synchronously
-      UtilClass.showProgress(context: context);
-      await Repository.postApiService(
-         EndPoints.newLoginApi,
-        {"phone_number":"9346222599"},
-      ).then((value) async{
-        UtilClass.hideProgress();
-        dynamic parsed = {};
-    try{
-      parsed = await json.decode(value);
-    }catch(e){
-      print(e);
-    }
-        print( parsed["message"]);
-       
-
-
+    if (phone.isEmpty) {
+      setState(() {
+        _errorMessage = "Phone number cannot be empty";
+      });
+    } else if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
+      setState(() {
+        _errorMessage = "Please enter a valid 10-digit phone number";
       });
     } else {
-      // ignore: use_build_context_synchronously
-      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+      setState(() {
+        _errorMessage = null; // clear error if valid
+      });
+      print("✅ Phone number entered: $phone");
+      // 👉 Here you can navigate to OTP screen if needed
+      Navigator.pushNamed(
+        context,
+        Config.otpRouteName,
+        arguments: {
+          "phone": phone,
+          "fromScreen": "login",
+        },
+      );
+
     }
   }
 
@@ -75,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 SizedBox(height: screenHeight * 0.02),
 
-                // Custom Back Button
+                /// Back button
                 Align(
                   alignment: Alignment.centerLeft,
                   child: InkWell(
@@ -96,15 +94,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 SizedBox(height: screenHeight * 0.05),
 
-                // Logo
+                /// Logo
                 Image.asset(
-                  'assets/images/gobuddyIcon.png', // replace with your logo
+                  'assets/images/gobuddyIcon.png',
                   height: screenHeight * 0.12,
                 ),
 
                 SizedBox(height: screenHeight * 0.01),
 
-                // Login Title
                 Text(
                   "Login",
                   style: TextStyle(
@@ -116,56 +113,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 SizedBox(height: screenHeight * 0.025),
 
-                // Subtitle
                 Text(
                   "Enter your phone number",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.black87,
-                  ),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w400),
                 ),
                 SizedBox(height: screenHeight * 0.005),
                 Text(
                   "We will send you the 4 digit verification code",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
 
                 SizedBox(height: screenHeight * 0.04),
 
-                // Phone Number Field
-                // Phone Number Field
+                /// Phone field
                 _buildTextField(
                   controller: _phoneController,
                   focusNode: _phoneFocus,
                   label: "Phone Number",
                   prefix: "+91 ",
-                  keyboardType: TextInputType.phone,
+                  keyboardType: TextInputType.number,
                 ),
 
+                /// Error message
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 4),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                  ),
 
                 SizedBox(height: screenHeight * 0.1),
 
-                // Gradient Button
+                /// Button
                 SizedBox(
                   width: double.infinity,
                   height: screenHeight * 0.065,
                   child: ElevatedButton(
-                    onPressed: () {
-
-                      callLoginAPI();
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //       builder: (_) =>
-                      //       //OTPScreen(phone: _phoneController.text),
-                      //       DashboardPage()
-                      //   ),
-                      // );
-                    },
+                    onPressed: _validateAndSubmit, // <-- validation on button click
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
@@ -197,46 +186,31 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 SizedBox(height: screenHeight * 0.025),
 
-                // Register Here
-                GestureDetector(
-
-                  child:  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "New User? ",
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.04,
-                            color: Colors.black54,
-                          ),
+                /// Register link
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("New User? ",
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                          color: Colors.black54,
+                        )),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pushReplacementNamed(
+                          Config.registrationRouteName,
+                        );
+                      },
+                      child: Text(
+                        "Register Here",
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            // Navigate to Register Page
-                            Navigator.of(context).pushReplacementNamed(
-                              Config.registrationRouteName,
-                            );
-                          },
-                          child: Text(
-                            "Register Here",
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.04,
-                              color: Colors.green,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                  onTap: (){
-                    // Navigator.of(context).pushReplacementNamed(
-                    //   Config.SignupScreen,
-                    // );
-
-                  },
+                  ],
                 ),
 
                 SizedBox(height: screenHeight * 0.05),
@@ -246,11 +220,10 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
-
-
   }
 }
 
+/// Reusable phone number field
 Widget _buildTextField({
   required TextEditingController controller,
   required FocusNode focusNode,
@@ -260,13 +233,17 @@ Widget _buildTextField({
   TextInputType? keyboardType,
 }) {
   bool isFocused = focusNode.hasFocus;
-  Color activeColor =Colors.red;
+  Color activeColor = MyColors.appThemeLight;
   Color inactiveColor = Colors.grey;
 
   return TextFormField(
     controller: controller,
     focusNode: focusNode,
-    keyboardType: keyboardType ?? TextInputType.text,
+    keyboardType: keyboardType ?? TextInputType.number,
+    inputFormatters: [
+      FilteringTextInputFormatter.digitsOnly, // only digits allowed
+      LengthLimitingTextInputFormatter(10),  // max 10 digits
+    ],
     style: const TextStyle(fontSize: 14),
     decoration: InputDecoration(
       labelText: label,
@@ -293,5 +270,3 @@ Widget _buildTextField({
     ),
   );
 }
-
-

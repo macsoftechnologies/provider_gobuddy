@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-import 'package:gobuddy/components/components/gradient_button.dart';
-import 'package:gobuddy/utils/config.dart';
+
+import '../../components/gradient_button.dart';
+import '../../utils/config.dart';
 
 // import 'package:providerapp_gobuddy/utilites/button.dart';
 //
 // import 'loginscreen.dart';
 
-class OnBoardScreen extends StatelessWidget {
+class OnBoardScreenOne extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double deviceHeight = MediaQuery.of(context).size.height;

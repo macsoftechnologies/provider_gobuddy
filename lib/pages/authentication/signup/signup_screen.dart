@@ -1,17 +1,11 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:gobuddy/components/components/custom_back_button.dart';
-import 'package:gobuddy/components/components/gradient_button.dart';
-import 'package:gobuddy/utils/config.dart';
-import 'package:gobuddy/utils/my_colors.dart';
 import 'package:image_picker/image_picker.dart';
-// import 'package:pin_code_fields/pin_code_fields.dart';
-// import 'package:providerapp_gobuddy/screens/ekycVerificationPage.dart';
-// import 'package:providerapp_gobuddy/utilites/button.dart';
-// import '../utilites/custombackbutton.dart';
-// import 'loginscreen.dart';
-// import 'otpScreen/otp_verification.dart';
+import 'package:flutter/services.dart';
+
+import '../../../components/button.dart';
+import '../../../components/custom_back_button.dart';
+import '../../../utils/config.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -21,6 +15,8 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  bool _submitted = false;
+
   String name = '';
   String phone = '';
   String altPhone = '';
@@ -29,6 +25,8 @@ class _SignupScreenState extends State<SignupScreen> {
   String address = '';
   String referralCode = '';
   String? workingCategory;
+  String? companyName;
+  String? teamCount;
   bool acceptTerms = false;
 
   File? _profileImage;
@@ -64,69 +62,77 @@ class _SignupScreenState extends State<SignupScreen> {
             bool hasSelection = technicianCategories.values.any((v) => v);
 
             return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        "Select Technician Categories",
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      "Select Technician Categories",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    ...technicianCategories.keys.map((category) {
-                      return CheckboxListTile(
-                        title: Text(
-                          category,
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                  ...technicianCategories.keys.map((category) {
+                    return CheckboxListTile(
+                      title: Text(
+                        category,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
-                        value: technicianCategories[category],
-                        activeColor: Colors.green,
-                        visualDensity: VisualDensity.compact,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                        onChanged: (value) {
-                          setModalState(() {
-                            technicianCategories[category] = value!;
-                          });
-                        },
-                      );
-                    }).toList(),
-                    Padding(
-                      padding: const EdgeInsets.all(14.0),
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.7,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: hasSelection ? Colors.green : Colors.grey.shade300,
-                            foregroundColor: hasSelection ? Colors.white : Colors.black54,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                      ),
+                      value: technicianCategories[category],
+                      activeColor: Colors.green,
+                      visualDensity: VisualDensity.compact,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                      onChanged: (value) {
+                        setModalState(() {
+                          technicianCategories[category] = value!;
+                        });
+                      },
+                    );
+                  }).toList(),
+                  Padding(
+                    padding: const EdgeInsets.all(14.0),
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.7,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: hasSelection
+                              ? Colors.green
+                              : Colors.grey.shade300,
+                          foregroundColor: hasSelection
+                              ? Colors.white
+                              : Colors.black54,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          onPressed: hasSelection
-                              ? () {
-                            final selected = technicianCategories.entries
-                                .where((e) => e.value)
-                                .map((e) => e.key)
-                                .join(', ');
-                            _techCategoryController.text = selected;
-                            Navigator.pop(context);
-                          }
-                              : null,
-                          child: const Text(
-                            "Proceed",
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                        ),
+                        onPressed: hasSelection
+                            ? () {
+                          final selected = technicianCategories.entries
+                              .where((e) => e.value)
+                              .map((e) => e.key)
+                              .join(', ');
+                          _techCategoryController.text = selected;
+                          Navigator.pop(context);
+                        }
+                            : null,
+                        child: const Text(
+                          "Proceed",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                    )
-                  ],
-                ),
+                    ),
+                  ),
+                ],
               ),
             );
           },
@@ -134,10 +140,13 @@ class _SignupScreenState extends State<SignupScreen> {
       },
     );
   }
+
   void _showWorkingCategoryDialog() {
     String? tempCategory = workingCategory;
-    TextEditingController companyController = TextEditingController();
-    TextEditingController teamCountController = TextEditingController();
+    TextEditingController companyController =
+    TextEditingController(text: companyName ?? "");
+    TextEditingController teamCountController =
+    TextEditingController(text: teamCount ?? "");
 
     showDialog(
       context: context,
@@ -166,7 +175,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: [
                     Text(
                       "Select Working Category",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: 16),
                     RadioListTile<String>(
@@ -177,7 +189,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       onChanged: (value) {
                         setModalState(() => tempCategory = value);
                       },
-                      contentPadding: EdgeInsets.zero,
                     ),
                     RadioListTile<String>(
                       title: Text("Organisation"),
@@ -187,23 +198,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       onChanged: (value) {
                         setModalState(() => tempCategory = value);
                       },
-                      contentPadding: EdgeInsets.zero,
                     ),
                     if (tempCategory == "Organisation") ...[
-                      SizedBox(height: 16),
-                      Text(
-                        "Company Details",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8),
                       TextField(
                         controller: companyController,
                         onChanged: (_) => setModalState(() {}),
                         decoration: InputDecoration(
                           hintText: "Enter Company Name",
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 10),
                         ),
                       ),
                       SizedBox(height: 12),
@@ -214,8 +216,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         decoration: InputDecoration(
                           hintText: "Enter Team Count",
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 10),
                         ),
                       ),
                     ],
@@ -228,7 +228,6 @@ class _SignupScreenState extends State<SignupScreen> {
                             child: Text("Cancel"),
                           ),
                         ),
-                        SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -245,6 +244,16 @@ class _SignupScreenState extends State<SignupScreen> {
                                 workingCategory = tempCategory;
                                 _workingCategoryController.text =
                                     workingCategory ?? '';
+
+                                if (workingCategory == "Organisation") {
+                                  companyName =
+                                      companyController.text.trim();
+                                  teamCount =
+                                      teamCountController.text.trim();
+                                } else {
+                                  companyName = null;
+                                  teamCount = null;
+                                }
                               });
                               Navigator.pop(context);
                             }
@@ -267,60 +276,76 @@ class _SignupScreenState extends State<SignupScreen> {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
+      errorStyle: TextStyle(color: Colors.red, fontSize: 12),
       labelStyle: TextStyle(color: Colors.grey, fontSize: 14),
       floatingLabelStyle: TextStyle(color: Colors.green, fontSize: 14),
       contentPadding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.green, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.red, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.green, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
     );
   }
 
-  InputDecoration _inputDecorationWithIcon(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(color: Colors.grey, fontSize: 14),
-      floatingLabelStyle: TextStyle(color: Colors.green, fontSize: 14),
-      contentPadding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.green, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.red, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.green, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      suffixIcon: Icon(
-        Icons.location_on_outlined,
-        color: Colors.grey,
-      ),
+  String? _validateName(String? value) {
+    if (!_submitted) return null;
+    if (value == null || value.isEmpty) return 'Enter your name';
+    if (!RegExp(r'^[a-zA-Z ]+$').hasMatch(value)) {
+      return 'Name must contain only alphabets';
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    if (!_submitted) return null;
+    if (value == null || value.isEmpty) return 'Enter phone number';
+    if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+      return 'Phone must be 10 digits';
+    }
+    return null;
+  }
+
+  String? _validateDob(String? value) {
+    if (!_submitted) return null;
+    if (value == null || value.isEmpty) return 'Enter date of birth';
+    if (!RegExp(r'^\d{4}/\d{2}/\d{2}$').hasMatch(value)) {
+      return 'Format must be YYYY/MM/DD';
+    }
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    if (!_submitted) return null;
+    if (value == null || value.isEmpty) return null;
+    final regex = RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$');
+    if (!regex.hasMatch(value)) return 'Enter valid email';
+    return null;
+  }
+
+  void _showSummaryDialog() {
+    print("""
+Name: $name
+Phone: $phone
+Alt Phone: $altPhone
+DOB: $dob
+Email: $email
+Tech Category: ${_techCategoryController.text}
+Working Category: ${_workingCategoryController.text}
+Company Name: $companyName
+Team Count: $teamCount
+Address: $address
+Referral: $referralCode
+""");
+
+    Navigator.pushNamed(
+      context,
+      Config.otpRouteName,
+      arguments: {
+        "phone": phone,
+        "fromScreen": "register",
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final deviceHeight = MediaQuery.of(context).size.height;
     final deviceWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -333,37 +358,25 @@ class _SignupScreenState extends State<SignupScreen> {
         color: Colors.white,
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
-              deviceWidth * 0.04, 0, deviceWidth * 0.04, deviceWidth * 0.04),
+            deviceWidth * 0.04,
+            0,
+            deviceWidth * 0.04,
+            deviceWidth * 0.04,
+          ),
           child: Form(
             key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Center(
-                  child: Column(
-                    children: [
-                      Image.asset('assets/images/gobuddyIcon.png',
-                          height: deviceHeight * 0.12),
-                      SizedBox(height: 5),
-                      Text('Register',
-                          style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Urbanist')),
-                      SizedBox(height: 5),
-                      Text("Let's create an account",
-                          style: TextStyle(fontSize: 16, color: Colors.grey)),
-                      SizedBox(height: deviceHeight * 0.02),
-                    ],
-                  ),
-                ),
+              children: [
+                // Profile Image
                 Center(
                   child: Stack(
                     children: [
                       CircleAvatar(
                         radius: deviceWidth * 0.14,
-                        backgroundImage:
-                        _profileImage != null ? FileImage(_profileImage!) : null,
+                        backgroundImage: _profileImage != null
+                            ? FileImage(_profileImage!)
+                            : null,
                         child: _profileImage == null
                             ? Icon(Icons.person, size: deviceWidth * 0.14)
                             : null,
@@ -389,155 +402,147 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                   ),
                 ),
-                SizedBox(height: deviceHeight * 0.019),
+                SizedBox(height: 20),
+
                 TextFormField(
                   decoration: _inputDecoration('Name'),
-                  style: TextStyle(fontSize: 14),
-                  onChanged: (value) => name = value,
-                  validator: (value) =>
-                  value!.isEmpty ? 'Enter your name' : null,
+                  onChanged: (v) => setState(() => name = v),
+                  validator: _validateName,
                 ),
                 SizedBox(height: 15),
+
                 TextFormField(
                   decoration: _inputDecoration('Phone Number'),
-                  style: TextStyle(fontSize: 14),
                   keyboardType: TextInputType.phone,
-                  onChanged: (value) => phone = value,
-                  validator: (value) =>
-                  value!.isEmpty ? 'Enter phone number' : null,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  onChanged: (v) => setState(() => phone = v),
+                  validator: _validatePhone,
                 ),
                 SizedBox(height: 15),
+
                 TextFormField(
                   decoration: _inputDecoration('Alternative Phone Number'),
-                  style: TextStyle(fontSize: 14),
                   keyboardType: TextInputType.phone,
-                  onChanged: (value) => altPhone = value,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  onChanged: (v) => setState(() => altPhone = v),
+                  validator: _validatePhone,
                 ),
                 SizedBox(height: 15),
+
                 TextFormField(
                   decoration: _inputDecoration('Date of Birth (YYYY/MM/DD)'),
-                  style: TextStyle(fontSize: 14),
                   keyboardType: TextInputType.datetime,
-                  onChanged: (value) => dob = value,
+                  onChanged: (v) => setState(() => dob = v),
+                  validator: _validateDob,
                 ),
                 SizedBox(height: 15),
+
                 TextFormField(
                   decoration: _inputDecoration('Email (Optional)'),
-                  style: TextStyle(fontSize: 14),
                   keyboardType: TextInputType.emailAddress,
-                  onChanged: (value) => email = value,
+                  onChanged: (v) => setState(() => email = v),
+                  validator: _validateEmail,
                 ),
                 SizedBox(height: 15),
+
                 GestureDetector(
                   onTap: _showTechnicianCategoryDialog,
                   child: AbsorbPointer(
                     child: TextFormField(
                       controller: _techCategoryController,
-                      style: TextStyle(fontSize: 14),
-                      decoration: _inputDecoration('Technician Category').copyWith(
-                        suffixIcon: Icon(Icons.arrow_drop_down),
-                      ),
+                      decoration: _inputDecoration(
+                        'Technician Category',
+                      ).copyWith(suffixIcon: Icon(Icons.arrow_drop_down)),
+                      validator: (v) {
+                        if (!_submitted) return null;
+                        return v == null || v.isEmpty
+                            ? 'Select a category'
+                            : null;
+                      },
                     ),
                   ),
                 ),
                 SizedBox(height: 15),
+
                 GestureDetector(
                   onTap: _showWorkingCategoryDialog,
                   child: AbsorbPointer(
                     child: TextFormField(
                       controller: _workingCategoryController,
-                      style: TextStyle(fontSize: 14),
-                      decoration: _inputDecoration('Working Category').copyWith(
-                        suffixIcon: Icon(Icons.arrow_drop_down),
-                      ),
-                      validator: (value) =>
-                      value!.isEmpty ? 'Select a working category' : null,
+                      decoration: _inputDecoration(
+                        'Working Category',
+                      ).copyWith(suffixIcon: Icon(Icons.arrow_drop_down)),
+                      validator: (v) {
+                        if (!_submitted) return null;
+                        return v == null || v.isEmpty
+                            ? 'Select working category'
+                            : null;
+                      },
                     ),
                   ),
                 ),
                 SizedBox(height: 15),
+
                 TextFormField(
-                  decoration: _inputDecorationWithIcon('Address'),
-                  style: TextStyle(fontSize: 14),
-                  onChanged: (value) => address = value,
+                  decoration: _inputDecoration('Address'),
+                  onChanged: (v) => setState(() => address = v),
+                  validator: (v) {
+                    if (!_submitted) return null;
+                    return v == null || v.isEmpty ? 'Enter address' : null;
+                  },
                 ),
                 SizedBox(height: 15),
+
                 TextFormField(
-                  decoration:
-                  _inputDecoration('Enter Referral Code (Optional)'),
-                  style: TextStyle(fontSize: 14),
-                  onChanged: (value) => referralCode = value,
+                  decoration: _inputDecoration('Referral Code (Optional)'),
+                  onChanged: (v) => referralCode = v,
                 ),
-                SizedBox(height: 22),
+                SizedBox(height: 15),
+
                 Row(
                   children: [
                     Checkbox(
-                        value: acceptTerms,
-                        activeColor: Colors.green,
-                        onChanged: (val) {
-                          setState(() {
-                            acceptTerms = val ?? false;
-                          });
-                        }),
-                    GestureDetector(
-                      onTap: () {},
-                      child: Text("Accept ",
-                          style: TextStyle(color: Colors.black)),
-                    ),
-                    GestureDetector(
-                      onTap: () {},
-                      child: Text("Terms and Conditions",
-                          style: TextStyle(
-                              color: Colors.orange,
-                              decoration: TextDecoration.underline)),
-                    )
-                  ],
-                ),
-                SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  height: deviceHeight * 0.07,
-                  child: GradientButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        if (!acceptTerms) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Accept terms first")));
-                          return;
-                        }
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(builder: (_) => OTPVerificationScreen()),
-                        // );
-                      }
-                    },
-                    child: Text("Register",
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-                SizedBox(height: 15),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text("Already have an account? "),
-
-                    GestureDetector(
-                      child: Text("Login here",
-                          style: TextStyle(
-                              color: Colors.green,
-                              decoration: TextDecoration.underline)),
-                      onTap: (){
-                        Navigator.of(context).pushReplacementNamed(
-                          Config.loginRouteName,
-                        );
+                      value: acceptTerms,
+                      onChanged: (val) {
+                        setState(() => acceptTerms = val ?? false);
                       },
                     ),
-                    SizedBox(height: 15),
+                    Expanded(
+                      child: Text(
+                        "Accept Terms and Conditions",
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ),
                   ],
+                ),
+                if (_submitted && !acceptTerms)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "You must accept terms",
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+                SizedBox(height: 20),
 
-                )
-
+                GradientButton(
+                  onPressed: () {
+                    setState(() => _submitted = true);
+                    if (_formKey.currentState!.validate() && acceptTerms) {
+                      _showSummaryDialog();
+                    }
+                  },
+                  child: Text(
+                    "Register",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ],
             ),
           ),
