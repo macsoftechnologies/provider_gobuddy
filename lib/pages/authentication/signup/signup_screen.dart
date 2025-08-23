@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/utils/util_class.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 
@@ -7,12 +9,61 @@ import '../../../components/button.dart';
 import '../../../components/custom_back_button.dart';
 import '../../../utils/config.dart';
 
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+
 class SignupScreen extends StatefulWidget {
   @override
   _SignupScreenState createState() => _SignupScreenState();
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+
+   dynamic catageories = [];
+   @override
+  void initState() {
+    super.initState();
+    callCatDetailsAPI();
+  }
+
+
+callCatDetailsAPI() async {
+
+
+  var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.locaCatApi, {
+        "pincode": "530017"
+       
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+           catageories = parsed["categories"];
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+
+}
+
   final _formKey = GlobalKey<FormState>();
 
   bool _submitted = false;
@@ -114,13 +165,13 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         onPressed: hasSelection
                             ? () {
-                          final selected = technicianCategories.entries
-                              .where((e) => e.value)
-                              .map((e) => e.key)
-                              .join(', ');
-                          _techCategoryController.text = selected;
-                          Navigator.pop(context);
-                        }
+                                final selected = technicianCategories.entries
+                                    .where((e) => e.value)
+                                    .map((e) => e.key)
+                                    .join(', ');
+                                _techCategoryController.text = selected;
+                                Navigator.pop(context);
+                              }
                             : null,
                         child: const Text(
                           "Proceed",
@@ -143,10 +194,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _showWorkingCategoryDialog() {
     String? tempCategory = workingCategory;
-    TextEditingController companyController =
-    TextEditingController(text: companyName ?? "");
-    TextEditingController teamCountController =
-    TextEditingController(text: teamCount ?? "");
+    TextEditingController companyController = TextEditingController(
+      text: companyName ?? "",
+    );
+    TextEditingController teamCountController = TextEditingController(
+      text: teamCount ?? "",
+    );
 
     showDialog(
       context: context,
@@ -240,23 +293,23 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             onPressed: isValidSelection
                                 ? () {
-                              setState(() {
-                                workingCategory = tempCategory;
-                                _workingCategoryController.text =
-                                    workingCategory ?? '';
+                                    setState(() {
+                                      workingCategory = tempCategory;
+                                      _workingCategoryController.text =
+                                          workingCategory ?? '';
 
-                                if (workingCategory == "Organisation") {
-                                  companyName =
-                                      companyController.text.trim();
-                                  teamCount =
-                                      teamCountController.text.trim();
-                                } else {
-                                  companyName = null;
-                                  teamCount = null;
-                                }
-                              });
-                              Navigator.pop(context);
-                            }
+                                      if (workingCategory == "Organisation") {
+                                        companyName = companyController.text
+                                            .trim();
+                                        teamCount = teamCountController.text
+                                            .trim();
+                                      } else {
+                                        companyName = null;
+                                        teamCount = null;
+                                      }
+                                    });
+                                    Navigator.pop(context);
+                                  }
                                 : null,
                             child: Text("Proceed"),
                           ),
@@ -337,11 +390,80 @@ Referral: $referralCode
     Navigator.pushNamed(
       context,
       Config.otpRouteName,
-      arguments: {
-        "phone": phone,
-        "fromScreen": "register",
-      },
+      arguments: {"phone": phone, "fromScreen": "register"},
     );
+  }
+
+  void callProviderRegisterAPI() async {
+    print("""
+Name: $name
+Phone: $phone
+Alt Phone: $altPhone
+DOB: $dob
+Email: $email
+Tech Category: ${_techCategoryController.text}
+Working Category: ${_workingCategoryController.text}
+Company Name: $companyName
+Team Count: $teamCount
+Address: $address
+Referral: $referralCode
+""");
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.providerRegisterApi, {
+        "name": name,
+        "email": email,
+        "phone_number": phone,
+        "password": "123456",
+        "terms_and_conditions": "testing",
+        "latitude": "17.740678937225038",
+        "longitude": "83.3093623816967",
+        "place_id": "5",
+        "landmark": "Vizag",
+        "location": "Vizag",
+        "token": "testing",
+        "dob": "24-05-1998",
+        "address": "vizag",
+        "working_category": _workingCategoryController.text,
+        "company_name": "Yamuna Cooling Service",
+        "team_count": "6",
+        "referral_code": referralCode,
+        "skills": "1,2,3",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            Navigator.pushNamed(
+              // ignore: use_build_context_synchronously
+              context,
+              Config.otpRouteName,
+              arguments: {
+                "phone": parsed["phone_number"],
+                "user_id": parsed["user_id"],
+                "fromScreen": "register",
+              },
+            );
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   @override
@@ -535,7 +657,7 @@ Referral: $referralCode
                   onPressed: () {
                     setState(() => _submitted = true);
                     if (_formKey.currentState!.validate() && acceptTerms) {
-                      _showSummaryDialog();
+                      callProviderRegisterAPI();
                     }
                   },
                   child: Text(

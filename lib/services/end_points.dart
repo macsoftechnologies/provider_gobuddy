@@ -4,6 +4,9 @@ class EndPoints {
   
   //full_urls
   static const String newLoginApi = "${newbaseUrl}newlogin";
+  static const String providerRegisterApi = "${newbaseUrl}provider_register";
+  static const String locaCatApi = "${newbaseUrl}locationbasedoncategories";
+
  
  
 }
