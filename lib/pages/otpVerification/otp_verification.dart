@@ -1,20 +1,28 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 import '../../utils/my_colors.dart';
 import '../../utils/config.dart';
 import '../onboard/onboard_screen.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
 // import '../home_screen.dart';
 // import '../ekycVerificationPage.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phoneNumber;
   final String fromScreen; // <-- Add this
+  final String userid;
 
   const OTPVerificationScreen({
     Key? key,
-    this.phoneNumber = '9876543210',
+    required this.phoneNumber,
     required this.fromScreen, // <-- Required param
+    // ignore: non_constant_identifier_names
+    required this.userid
   }) : super(key: key);
 
   @override
@@ -22,8 +30,10 @@ class OTPVerificationScreen extends StatefulWidget {
 }
 
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
-  List<TextEditingController> controllers =
-  List.generate(4, (index) => TextEditingController());
+  List<TextEditingController> controllers = List.generate(
+    4,
+    (index) => TextEditingController(),
+  );
   List<FocusNode> focusNodes = List.generate(4, (index) => FocusNode());
 
   @override
@@ -70,13 +80,71 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     }
   }
 
+  void callOtpResendAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.resendOtp, {
+        "user_id": widget.userid,
+      }).then((value) async {
+        UtilClass.hideProgress();
+       
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  void callOtpVeifyAPI() async {
+
+    String otp = controllers.map((controller) => controller.text).join();
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.verifyOtp, {
+         "user_id": widget.userid,
+        "otp":otp,
+        "token":"testing"
+      }).then((value) async {
+       UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+             _showSuccessDialog();
+
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+       
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
   void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -93,7 +161,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: MyColors.appThemeLight,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.pop(context); // Close dialog
@@ -101,12 +170,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     if (widget.fromScreen == "login") {
                       /// 🔹 If navigated from Login -> Go to Home
 
-                      Navigator.of(context).pushReplacementNamed(
-                          Config.dashboardcRouteName,);
+                      Navigator.of(
+                        context,
+                      ).pushReplacementNamed(Config.dashboardcRouteName);
                     } else if (widget.fromScreen == "register") {
                       /// 🔹 If navigated from Register -> Go to EKYCVerification
-                      Navigator.of(context).pushReplacementNamed(
-                        Config.ekycRouteName,);
+                      Navigator.of(
+                        context,
+                      ).pushReplacementNamed(Config.ekycRouteName);
                     }
                   },
                   child: const Text(
@@ -114,7 +185,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     style: TextStyle(color: Colors.white, fontSize: 15),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         );
@@ -128,7 +199,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -145,7 +218,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   onPressed: () => Navigator.pop(context),
                   child: const Text(
@@ -153,7 +227,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     style: TextStyle(color: Colors.white, fontSize: 15),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         );
@@ -229,7 +303,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                             Text(
                               'Enter the code we sent to the number',
                               style: TextStyle(
-                                  fontSize: 15, color: Colors.grey.shade600),
+                                fontSize: 15,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -286,12 +362,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
                             /// Resend OTP
                             GestureDetector(
-                              onTap: _resendOTP,
+                              onTap: callOtpResendAPI,
                               child: RichText(
                                 text: const TextSpan(
                                   text: "Don't receive the OTP? ",
-                                  style:
-                                  TextStyle(color: Colors.grey, fontSize: 14),
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
+                                  ),
                                   children: [
                                     TextSpan(
                                       text: 'Resend OTP',
@@ -325,23 +403,17 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                   decoration: BoxDecoration(
                     gradient: _isOtpComplete
                         ? const LinearGradient(
-                      colors: [
-                        Color(0xFFC8BB47),
-                        Color(0xFF25AC2C),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    )
+                            colors: [Color(0xFFC8BB47), Color(0xFF25AC2C)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          )
                         : LinearGradient(
-                      colors: [
-                        Colors.grey[300]!,
-                        Colors.grey[300]!,
-                      ],
-                    ),
+                            colors: [Colors.grey[300]!, Colors.grey[300]!],
+                          ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ElevatedButton(
-                    onPressed: _isOtpComplete ? _verifyOTP : null,
+                    onPressed: _isOtpComplete ? callOtpVeifyAPI : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,

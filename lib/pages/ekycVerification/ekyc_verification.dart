@@ -1,6 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/util_class.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../components/custom_back_button.dart';
 import '../../components/appcolor.dart';
@@ -70,6 +75,72 @@ class _EKYCVerificationPageState extends State<EKYCVerificationPage> {
         aadharBack != null &&
         panOrDl != null &&
         acceptConditions;
+  }
+
+
+  void callekycVeifyAPI() async {
+
+String aadharfrontName = aadharFront!.path.split('/').last;
+String aadhaarBackName = aadharBack!.path.split('/').last;
+String pancardname = panOrDl!.path.split('/').last;
+ var formData = FormData.fromMap(
+  
+  {
+    
+    "user_id":"4361",
+    "document_type":"Aadhar",
+    "aadhar_front": await MultipartFile.fromFile(
+        aadharFront!.path,
+        filename: "aadhar_front",
+        
+      ),
+       "aadhar_back": await MultipartFile.fromFile(
+        aadharBack!.path,
+        filename: "aadhar_back",
+        // contentType: MediaType('image', 'jpeg'), // Optional: specify content type
+      ),
+       "pancard": await MultipartFile.fromFile(
+        panOrDl!.path,
+        filename: "panOrDl",
+        // contentType: MediaType('image', 'jpeg'), // Optional: specify content type
+      ),
+    
+    }
+
+
+
+ );
+    
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postimagesApiService(EndPoints.ekycApi, formData).then((value) async {
+       UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+         
+
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+       
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   @override
@@ -173,20 +244,22 @@ class _EKYCVerificationPageState extends State<EKYCVerificationPage> {
                 child: ElevatedButton(
                   onPressed: isFormValid()
                       ? () {
-                    showCustomDialog(
-                      context: context,
-                      message: 'Documents Submitted Successfully!',
-                    );
+
+                        callekycVeifyAPI();
+                    // showCustomDialog(
+                    //   context: context,
+                    //   message: 'Documents Submitted Successfully!',
+                    // );
 
                     // Delay navigation by 2 seconds
-                    Future.delayed(Duration(seconds: 2), () {
-                      Navigator.pushNamed(
-                        context,
-                        Config.regiFeeRouteName,
+                    // Future.delayed(Duration(seconds: 2), () {
+                    //   Navigator.pushNamed(
+                    //     context,
+                    //     Config.regiFeeRouteName,
 
-                      );
-                      //RegistrationFeePage
-                    });
+                    //   );
+                    //   //RegistrationFeePage
+                    // });
                   }
 
 

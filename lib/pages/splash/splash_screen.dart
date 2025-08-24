@@ -26,7 +26,7 @@ void initState() {
 
   startTimer() {
     var duration = const Duration(
-      seconds: 9,
+      seconds: 4,
     );
     return Timer(duration, checkConditions);
   }
@@ -53,7 +53,7 @@ void initState() {
 
    void navigateToonBoard() {
     Navigator.of(context).pushReplacementNamed(
-      Config.onBoardRouteName,
+      Config.ekycRouteName,
     );
   }
 

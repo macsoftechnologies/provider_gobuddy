@@ -59,4 +59,26 @@ class Repository {
       }
     }
   }
+
+  static Future<dynamic> postimagesApiService(dynamic endpoint, dynamic formData) async {
+  
+    try {
+      Response response = await dio.post(
+        endpoint, // Replace with your API endpoint
+        data: formData,
+      );
+      print('Response: ${response.data}');
+
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        print('Error response data: ${e.response!.data}');
+        print('Error response headers: ${e.response!.headers}');
+        return e;
+      } else {
+        print('Error sending request: $e');
+        return e;
+      }
+    }
+  }
 }
