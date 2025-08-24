@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // for input formatters
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/util_class.dart';
 import '../../../utils/my_colors.dart';
 import '../../../utils/config.dart';
 
@@ -45,15 +50,54 @@ class _LoginScreenState extends State<LoginScreen> {
       });
       print("✅ Phone number entered: $phone");
       // 👉 Here you can navigate to OTP screen if needed
-      Navigator.pushNamed(
-        context,
-        Config.otpRouteName,
-        arguments: {
-          "phone": phone,
-          "fromScreen": "login",
-        },
-      );
+      callOtpVeifyAPI();
+    }
+  }
 
+  void callOtpVeifyAPI() async {
+    String phoneNumber = _phoneController.text.trim();
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.newLoginApi, {
+        "phone_number": phoneNumber,
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            String useidTxt = parsed['user_id'] ?? '';
+
+           
+
+            Navigator.pushNamed(
+              // ignore: use_build_context_synchronously
+              context,
+              Config.otpRouteName,
+              arguments: {
+               "phone": phoneNumber,
+                "user_id": parsed["user_id"],
+                "fromScreen": "login",
+              },
+            );
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
     }
   }
 
@@ -154,7 +198,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: screenHeight * 0.065,
                   child: ElevatedButton(
-                    onPressed: _validateAndSubmit, // <-- validation on button click
+                    onPressed:
+                        _validateAndSubmit, // <-- validation on button click
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
@@ -190,16 +235,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("New User? ",
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.04,
-                          color: Colors.black54,
-                        )),
+                    Text(
+                      "New User? ",
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.04,
+                        color: Colors.black54,
+                      ),
+                    ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.of(context).pushReplacementNamed(
-                          Config.registrationRouteName,
-                        );
+                        Navigator.of(
+                          context,
+                        ).pushReplacementNamed(Config.registrationRouteName);
                       },
                       child: Text(
                         "Register Here",
@@ -242,7 +289,7 @@ Widget _buildTextField({
     keyboardType: keyboardType ?? TextInputType.number,
     inputFormatters: [
       FilteringTextInputFormatter.digitsOnly, // only digits allowed
-      LengthLimitingTextInputFormatter(10),  // max 10 digits
+      LengthLimitingTextInputFormatter(10), // max 10 digits
     ],
     style: const TextStyle(fontSize: 14),
     decoration: InputDecoration(
@@ -255,10 +302,7 @@ Widget _buildTextField({
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: MyColors.cardColor,
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 10,
-        horizontal: 12,
-      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(color: inactiveColor, width: 0.5),
         borderRadius: BorderRadius.circular(6),

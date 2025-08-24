@@ -1,8 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:gobuddy/components/custom_back_button.dart';
 import 'package:gobuddy/components/coupon_applied_alert.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 import '../../utils/config.dart';
+
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
   final double amount;
@@ -26,6 +32,59 @@ class PaymentMethodScreen extends StatefulWidget {
 
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   PaymentMethod? selectedPaymentMethod = PaymentMethod.phonePe;
+
+  void callpaymentVeifyAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.onetimeregistrationApi, {
+        "user_id": "4361",
+        "amount": "300",
+        "referral_code": "GOB123",
+        "saving_amount": "50",
+        "payment_id": "TE12SET456",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            showDialog(
+              context: context,
+              builder: (context) {
+                Future.delayed(const Duration(seconds: 3), () {
+                  Navigator.of(context).pop(); // close the dialog first
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(Config.regiSuccessRouteName);
+                });
+
+                return const ReferralDialog(
+                  title: "Payment Successful",
+                  subtitle: "Thank You for purchasing the subscription.",
+                  image: "assets/images/greentick.png",
+                );
+              },
+            );
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,11 +242,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   }
 
   Widget _buildPaymentMethodTile(
-      PaymentMethod method,
-      String title,
-      String iconPath,
-      Color iconColor,
-      ) {
+    PaymentMethod method,
+    String title,
+    String iconPath,
+    Color iconColor,
+  ) {
     final isSelected = selectedPaymentMethod == method;
 
     return GestureDetector(
@@ -208,11 +267,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               //   color: iconColor.withOpacity(0.1),
               //   borderRadius: BorderRadius.circular(22),
               // ),
-              child:Image.asset(
-                iconPath,
-                height: 12,
-                width: 14,
-              ),
+              child: Image.asset(iconPath, height: 12, width: 14),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -231,17 +286,17 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF4CAF50) : const Color(0xFFBDBDBD),
+                  color: isSelected
+                      ? const Color(0xFF4CAF50)
+                      : const Color(0xFFBDBDBD),
                   width: 2,
                 ),
-                color: isSelected ? const Color(0xFF4CAF50) : Colors.transparent,
+                color: isSelected
+                    ? const Color(0xFF4CAF50)
+                    : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
-                Icons.check,
-                size: 12,
-                color: Colors.white,
-              )
+                  ? const Icon(Icons.check, size: 12, color: Colors.white)
                   : null,
             ),
           ],
@@ -282,11 +337,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 color: const Color(0xFFF0F0F0),
                 borderRadius: BorderRadius.circular(22),
               ),
-              child: const Icon(
-                Icons.add,
-                color: Color(0xFF666666),
-                size: 24,
-              ),
+              child: const Icon(Icons.add, color: Color(0xFF666666), size: 24),
             ),
             const SizedBox(width: 16),
             const Expanded(
@@ -310,9 +361,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       padding: EdgeInsets.all(screenWidth * 0.04),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFE0E0E0), width: 1),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
       ),
       child: SafeArea(
         child: Row(
@@ -333,10 +382,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   ),
                   const Text(
                     'To be paid now',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF666666),
-                    ),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
                   ),
                 ],
               ),
@@ -345,23 +391,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               flex: 1,
               child: ElevatedButton(
                 onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      // Add delay for 5 seconds and navigate
-                      Future.delayed(const Duration(seconds: 3), () {
-                        Navigator.of(context).pop(); // close the dialog first
-                        Navigator.of(context).pushReplacementNamed(
-                          Config.regiSuccessRouteName,);
-                      });
-
-                      return const ReferralDialog(
-                        title: "Payment Successful",
-                        subtitle: "Thank You for purchasing the subscription.",
-                        image: "assets/images/greentick.png",
-                      );
-                    },
-                  );
+                  callpaymentVeifyAPI();
                 },
 
                 style: ElevatedButton.styleFrom(
@@ -375,10 +405,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 ),
                 child: const Text(
                   'Pay',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -389,12 +416,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   }
 }
 
-enum PaymentMethod {
-  phonePe,
-  googlePay,
-  paytm,
-  upiId,
-}
+enum PaymentMethod { phonePe, googlePay, paytm, upiId }
 
 // Usage Example:
 class MyApp extends StatelessWidget {
@@ -402,10 +424,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Payment App',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        fontFamily: 'Roboto',
-      ),
+      theme: ThemeData(primarySwatch: Colors.green, fontFamily: 'Roboto'),
       home: PaymentMethodScreen(
         amount: 1648,
         onBackPressed: () {
@@ -419,7 +438,8 @@ class MyApp extends StatelessWidget {
         onPayPressed: () {
           // Handle pay button press
           print('Pay button pressed');
-        }, fromScreen: '',
+        },
+        fromScreen: '',
       ),
     );
   }

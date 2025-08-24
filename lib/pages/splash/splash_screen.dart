@@ -53,8 +53,10 @@ void initState() {
 
    void navigateToonBoard() {
     Navigator.of(context).pushReplacementNamed(
-      Config.ekycRouteName,
+      Config.loginRouteName,
     );
+
+     
   }
 
 

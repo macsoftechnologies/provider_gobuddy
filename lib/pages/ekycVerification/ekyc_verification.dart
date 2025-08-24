@@ -12,7 +12,6 @@ import '../../components/appcolor.dart';
 import '../../components/dailogbox.dart';
 import '../../utils/config.dart';
 
-
 class EKYCVerificationPage extends StatefulWidget {
   @override
   _EKYCVerificationPageState createState() => _EKYCVerificationPageState();
@@ -50,15 +49,15 @@ class _EKYCVerificationPageState extends State<EKYCVerificationPage> {
         child: file != null
             ? Image.file(file, fit: BoxFit.cover)
             : Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.upload_file, color: Colors.green, size: 30),
-              SizedBox(height: 4),
-              Text(label, style: TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.upload_file, color: Colors.green, size: 30),
+                    SizedBox(height: 4),
+                    Text(label, style: TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -77,65 +76,69 @@ class _EKYCVerificationPageState extends State<EKYCVerificationPage> {
         acceptConditions;
   }
 
-
   void callekycVeifyAPI() async {
-
-String aadharfrontName = aadharFront!.path.split('/').last;
-String aadhaarBackName = aadharBack!.path.split('/').last;
-String pancardname = panOrDl!.path.split('/').last;
- var formData = FormData.fromMap(
-  
-  {
-    
-    "user_id":"4361",
-    "document_type":"Aadhar",
-    "aadhar_front": await MultipartFile.fromFile(
+    String aadharfrontName = aadharFront!.path.split('/').last;
+    String aadhaarBackName = aadharBack!.path.split('/').last;
+    String pancardname = panOrDl!.path.split('/').last;
+    var formData = FormData.fromMap({
+      "user_id": "4361",
+      "document_type": "Aadhar",
+      "aadhar_front": await MultipartFile.fromFile(
         aadharFront!.path,
         filename: "aadhar_front",
-        
       ),
-       "aadhar_back": await MultipartFile.fromFile(
+      "aadhar_back": await MultipartFile.fromFile(
         aadharBack!.path,
         filename: "aadhar_back",
         // contentType: MediaType('image', 'jpeg'), // Optional: specify content type
       ),
-       "pancard": await MultipartFile.fromFile(
+      "pancard": await MultipartFile.fromFile(
         panOrDl!.path,
         filename: "panOrDl",
         // contentType: MediaType('image', 'jpeg'), // Optional: specify content type
       ),
-    
-    }
+    });
 
-
-
- );
-    
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
-      await Repository.postimagesApiService(EndPoints.ekycApi, formData).then((value) async {
-       UtilClass.hideProgress();
+      await Repository.postimagesApiService(EndPoints.ekycApi, formData).then((
+        value,
+      ) async {
+        UtilClass.hideProgress();
         dynamic parsed = {};
         try {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
-         
-
           } else {
             // ignore: use_build_context_synchronously
-            UtilClass.showAlertDialog(
-              // ignore: use_build_context_synchronously
-              context: context,
-              message: parsed["message"],
-            );
+            // UtilClass.showAlertDialog(
+            //   // ignore: use_build_context_synchronously
+            //   context: context,
+            //   message: parsed["message"],
+            // );
           }
+
+          showCustomDialog(
+            // ignore: use_build_context_synchronously
+            context: context,
+            message: 'Documents Submitted Successfully!',
+          );
+
+          // Delay navigation by 2 seconds
+          Future.delayed(Duration(seconds: 2), () {
+            Navigator.pushNamed(
+              // ignore: use_build_context_synchronously
+              context,
+              Config.regiFeeRouteName,
+            );
+            //RegistrationFeePage
+          });
         } catch (e) {
           print(e);
         }
         print(parsed["message"]);
-       
       });
     } else {
       // ignore: use_build_context_synchronously
@@ -157,7 +160,9 @@ String pancardname = panOrDl!.path.split('/').last;
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(child: Icon(Icons.verified_user, size: 60, color: Colors.green)),
+              Center(
+                child: Icon(Icons.verified_user, size: 60, color: Colors.green),
+              ),
               SizedBox(height: 10),
               Center(
                 child: Text(
@@ -178,7 +183,7 @@ String pancardname = panOrDl!.path.split('/').last;
                         setState(() => aadharFront = file);
                       }),
                       SizedBox(height: 5),
-                      Text("Front side")
+                      Text("Front side"),
                     ],
                   ),
                   Column(
@@ -187,7 +192,7 @@ String pancardname = panOrDl!.path.split('/').last;
                         setState(() => aadharBack = file);
                       }),
                       SizedBox(height: 5),
-                      Text("Back side")
+                      Text("Back side"),
                     ],
                   ),
                 ],
@@ -198,7 +203,9 @@ String pancardname = panOrDl!.path.split('/').last;
                 setState(() => panOrDl = file);
               }),
 
-              sectionTitle("Upload any skills or Training Certificates : (Optional)"),
+              sectionTitle(
+                "Upload any skills or Training Certificates : (Optional)",
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -238,36 +245,37 @@ String pancardname = panOrDl!.path.split('/').last;
                 decoration: BoxDecoration(
                   gradient: isFormValid()
                       ? AppColors.buttonGradient
-                      : LinearGradient(colors: [Colors.grey, Colors.grey[400]!]),
+                      : LinearGradient(
+                          colors: [Colors.grey, Colors.grey[400]!],
+                        ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: ElevatedButton(
                   onPressed: isFormValid()
                       ? () {
+                          callekycVeifyAPI();
+                          // showCustomDialog(
+                          //   context: context,
+                          //   message: 'Documents Submitted Successfully!',
+                          // );
 
-                        callekycVeifyAPI();
-                    // showCustomDialog(
-                    //   context: context,
-                    //   message: 'Documents Submitted Successfully!',
-                    // );
+                          // Delay navigation by 2 seconds
+                          // Future.delayed(Duration(seconds: 2), () {
+                          //   Navigator.pushNamed(
+                          //     context,
+                          //     Config.regiFeeRouteName,
 
-                    // Delay navigation by 2 seconds
-                    // Future.delayed(Duration(seconds: 2), () {
-                    //   Navigator.pushNamed(
-                    //     context,
-                    //     Config.regiFeeRouteName,
-
-                    //   );
-                    //   //RegistrationFeePage
-                    // });
-                  }
-
-
+                          //   );
+                          //   //RegistrationFeePage
+                          // });
+                        }
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: Text("Submit", style: TextStyle(color: Colors.white)),
                 ),
