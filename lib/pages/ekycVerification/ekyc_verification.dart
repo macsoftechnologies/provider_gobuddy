@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
 import 'package:gobuddy/utils/util_class.dart';
@@ -28,11 +29,22 @@ class _EKYCVerificationPageState extends State<EKYCVerificationPage> {
   File? skillCert1;
   File? skillCert2;
 
+  dynamic userData= {};
+
   Future<void> pickImage(Function(File) onSelected) async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       onSelected(File(image.path));
     }
+  }
+
+   @override
+  void initState() {
+    super.initState();
+
+     var userDataValue = Preferences.getUserDetails();
+      userData =  json.decode(userDataValue!);
+   
   }
 
   Widget uploadBox(File? file, String label, Function(File) onSelected) {
@@ -81,7 +93,7 @@ class _EKYCVerificationPageState extends State<EKYCVerificationPage> {
     String aadhaarBackName = aadharBack!.path.split('/').last;
     String pancardname = panOrDl!.path.split('/').last;
     var formData = FormData.fromMap({
-      "user_id": "4361",
+      "user_id": userData["user_id"],
       "document_type": "Aadhar",
       "aadhar_front": await MultipartFile.fromFile(
         aadharFront!.path,

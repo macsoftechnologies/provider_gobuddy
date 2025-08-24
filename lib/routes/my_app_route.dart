@@ -73,6 +73,7 @@ class MyAppRouteState extends State<MyAppRoute> {
       onGenerateRoute: (settings) {
         if (settings.name == Config.otpRouteName) {
           final args = settings.arguments as Map<String, dynamic>;
+         
           return MaterialPageRoute(
             builder: (_) => OTPVerificationScreen(
               phoneNumber: args['phone'] ?? '',

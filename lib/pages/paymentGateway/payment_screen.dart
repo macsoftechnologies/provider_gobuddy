@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gobuddy/components/custom_back_button.dart';
 import 'package:gobuddy/components/coupon_applied_alert.dart';
+import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/utils/util_class.dart';
 
 import '../../utils/config.dart';
@@ -11,6 +12,7 @@ import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
+  
   final double amount;
   final String fromScreen;
   final VoidCallback? onBackPressed;
@@ -32,14 +34,22 @@ class PaymentMethodScreen extends StatefulWidget {
 
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   PaymentMethod? selectedPaymentMethod = PaymentMethod.phonePe;
+    dynamic userData= {};
+ @override
+  void initState() {
+    super.initState();
 
+     var userDataValue = Preferences.getUserDetails();
+      userData =  json.decode(userDataValue!);
+   
+  }
   void callpaymentVeifyAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.onetimeregistrationApi, {
-        "user_id": "4361",
+        "user_id": userData["user_id"],
         "amount": "300",
         "referral_code": "GOB123",
         "saving_amount": "50",

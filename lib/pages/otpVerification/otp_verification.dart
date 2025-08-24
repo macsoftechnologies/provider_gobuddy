@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/utils/util_class.dart';
 
 import '../../utils/my_colors.dart';
@@ -35,7 +36,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     (index) => TextEditingController(),
   );
   List<FocusNode> focusNodes = List.generate(4, (index) => FocusNode());
-
+  dynamic userData= {};
   @override
   void dispose() {
     for (var controller in controllers) {
@@ -45,6 +46,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       focusNode.dispose();
     }
     super.dispose();
+  }
+   @override
+  void initState() {
+    super.initState();
+
+     var userDataValue = Preferences.getUserDetails();
+      userData =  json.decode(userDataValue!);
+  
   }
 
   void _onChanged(String value, int index) {
@@ -86,7 +95,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.resendOtp, {
-        "user_id": widget.userid,
+        "user_id": userData["user_id"],
       }).then((value) async {
         UtilClass.hideProgress();
        
@@ -105,7 +114,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.verifyOtp, {
-         "user_id": widget.userid,
+         "user_id": userData["user_id"],
         "otp":otp,
         "token":"testing"
       }).then((value) async {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/utils/util_class.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
@@ -358,8 +359,8 @@ callCatDetailsAPI() async {
   String? _validateDob(String? value) {
     if (!_submitted) return null;
     if (value == null || value.isEmpty) return 'Enter date of birth';
-    if (!RegExp(r'^\d{4}/\d{2}/\d{2}$').hasMatch(value)) {
-      return 'Format must be YYYY/MM/DD';
+    if (!RegExp(r'^\d{2}-\d{2}-\d{4}$').hasMatch(value)) {
+      return 'Format must be DD-MM-YYYY';
     }
     return null;
   }
@@ -437,13 +438,18 @@ Referral: $referralCode
         try {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
+
+             dynamic parsedconvert = await json.decode(value);
+             parsedconvert["user_id"] = parsed["user_id"].toString();
+             parsedconvert =  json.encode(parsedconvert);
+             Preferences.setUserDetails(parsedconvert);
             Navigator.pushNamed(
               // ignore: use_build_context_synchronously
               context,
               Config.otpRouteName,
               arguments: {
                 "phone": parsed["phone_number"],
-                "user_id": parsed["user_id"],
+                "user_id": parsed["user_id"].toString(),
                 "fromScreen": "register",
               },
             );
@@ -558,7 +564,7 @@ Referral: $referralCode
                 SizedBox(height: 15),
 
                 TextFormField(
-                  decoration: _inputDecoration('Date of Birth (YYYY/MM/DD)'),
+                  decoration: _inputDecoration('Date of Birth (DD/MM/YYYY)'),
                   keyboardType: TextInputType.datetime,
                   onChanged: (v) => setState(() => dob = v),
                   validator: _validateDob,
