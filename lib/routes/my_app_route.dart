@@ -8,6 +8,11 @@ import 'package:gobuddy/pages/authentication/signup/signup_screen.dart';
 import 'package:gobuddy/utils/config.dart';
 import 'package:gobuddy/utils/my_colors.dart';
 
+import '../pages/account/accountItems/mySubscription/my_subscriptions.dart';
+import '../pages/account/accountItems/referAndEarn/refer_earn.dart';
+import '../pages/account/accountItems/requestTool/request_tool_page.dart';
+import '../pages/account/accountItems/viewProfile/view_profile.dart';
+import '../pages/account/account_screen.dart';
 import '../pages/dashboard/dashboard_screen.dart';
 import '../pages/ekycVerification/ekyc_verification.dart';
 import '../pages/otpVerification/otp_verification.dart';
@@ -52,7 +57,12 @@ class MyAppRouteState extends State<MyAppRoute> {
        // Config.otpRouteName: (ctx) =>  OTPVerificationScreen(fromScreen: '',),
         // Config.viewMemRouteName: (ctx) => const ViewMemberScreen()
 
-
+        Config.accountRouteName: (ctx) =>  AccountPage(),
+        Config.viewProfileRouteName: (ctx) =>  ViewProfilePage(),
+        Config.mySubscriptionsRouteName: (ctx) =>  MySubscriptionsScreen(),
+        Config.referEarnRouteName: (ctx) =>  ReferAndEarnPage(), //requestToolRouteName
+        Config.requestToolRouteName: (ctx) =>  RequestToolScreen(),
+        //Config.myOrdersRouteName: (ctx) =>  MyOrdersScreen(),
 
       },
       // onGenerateRoute: (settings) {

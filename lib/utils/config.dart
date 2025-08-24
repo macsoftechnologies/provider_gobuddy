@@ -221,4 +221,10 @@ static const ekycRouteName='ekyc verification screen';//DashboardPage
   static const regiSuccessRouteName='Registration Success Page'; //RegistrationFeeScreen
   static const regiFeeRouteName='Registration Fee Screen'; //PaymentMethodScreen
   static const paymentMethodRouteName='Choose Payment method Screen';
+
+  static const accountRouteName='Account Screen'; //ViewProfilePage
+  static const viewProfileRouteName='View Profile Screen';
+  static const mySubscriptionsRouteName='my Subscriptions Screen';
+  static const referEarnRouteName='Refer And Earn Screen';
+  static const requestToolRouteName='Request Tool Screen';//MyOrdersScreen
 }

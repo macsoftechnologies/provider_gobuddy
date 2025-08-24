@@ -1,7 +1,6 @@
 class EndPoints {
   //base_url
   static const String newbaseUrl = "https://dev.gobuddyindia.com/api/";
-
   //full_urls
   static const String newLoginApi = "${newbaseUrl}newlogin";
   static const String providerRegisterApi = "${newbaseUrl}provider_register";
@@ -11,4 +10,6 @@ class EndPoints {
   static const String ekycApi = "${newbaseUrl}ekyc";
   static const String onetimeregistrationApi = "${newbaseUrl}onetimeregistration";
   static const String newlogin = "${newbaseUrl}newlogin";
+  static const String profile = "${newbaseUrl}profile";
+  static const String updateProfile = "${newbaseUrl}update_profile";
 }

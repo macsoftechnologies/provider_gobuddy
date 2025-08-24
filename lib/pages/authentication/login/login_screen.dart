@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // for input formatters
+import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
 import 'package:gobuddy/utils/util_class.dart';
@@ -68,9 +69,8 @@ class _LoginScreenState extends State<LoginScreen> {
         try {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
-            String useidTxt = parsed['user_id'] ?? '';
-
-           
+            
+            Preferences.setUserDetails(value);
 
             Navigator.pushNamed(
               // ignore: use_build_context_synchronously

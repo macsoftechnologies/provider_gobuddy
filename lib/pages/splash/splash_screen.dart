@@ -53,7 +53,7 @@ void initState() {
 
    void navigateToonBoard() {
     Navigator.of(context).pushReplacementNamed(
-      Config.loginRouteName,
+      Config.loginRouteName, //loginRouteName dashboardcRouteName
     );
 
      

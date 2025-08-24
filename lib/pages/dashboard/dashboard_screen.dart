@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../account/account_screen.dart';
+import '../orders/my_orders.dart';
 // import 'package:providerapp_gobuddy/screens/accountpage.dart';
 //
 // import 'myOrders/my_orders.dart';
@@ -26,7 +29,7 @@ class _DashboardPageState extends State<DashboardPage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Orders'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
         ],
         currentIndex: currentIndex,
         // ✅ Green color for selected item
@@ -49,9 +52,9 @@ class _DashboardPageState extends State<DashboardPage> {
       case 0:
         return dashboardScreen();
       case 1:
-        return dashboardScreen();//MyOrdersScreen
+        return MyOrdersScreen();//MyOrdersScreen
       case 2:
-        return dashboardScreen();//AccountPage
+        return AccountPage();//AccountPage
       default:
         return dashboardScreen();
     }
