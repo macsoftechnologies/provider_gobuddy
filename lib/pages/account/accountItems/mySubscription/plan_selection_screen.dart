@@ -5,6 +5,7 @@ import 'Ac_tec_basic_plan.dart';
 class PlanSelectionScreen extends StatefulWidget {
   //const PlanSelectionScreen({Key? key}) : super(key: key);
   final String categoryTitle;  // Add this parameter
+  @override
   final Key? key;
 
   const PlanSelectionScreen({

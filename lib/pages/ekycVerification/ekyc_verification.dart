@@ -14,6 +14,8 @@ import '../../components/dailogbox.dart';
 import '../../utils/config.dart';
 
 class EKYCVerificationPage extends StatefulWidget {
+  const EKYCVerificationPage({super.key});
+
   @override
   _EKYCVerificationPageState createState() => _EKYCVerificationPageState();
 }
@@ -43,7 +45,9 @@ class _EKYCVerificationPageState extends State<EKYCVerificationPage> {
     super.initState();
 
      var userDataValue = Preferences.getUserDetails();
-      userData =  json.decode(userDataValue!);
+     if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
    
   }
 
@@ -93,7 +97,7 @@ class _EKYCVerificationPageState extends State<EKYCVerificationPage> {
     String aadhaarBackName = aadharBack!.path.split('/').last;
     String pancardname = panOrDl!.path.split('/').last;
     var formData = FormData.fromMap({
-      "user_id": userData["user_id"],
+       "user_id": userData["user_id"] ?? "4361",
       "document_type": "Aadhar",
       "aadhar_front": await MultipartFile.fromFile(
         aadharFront!.path,

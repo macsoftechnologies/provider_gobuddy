@@ -1,8 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/pages/authentication/login/login_screen.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
 
 // import '../../utils/config.dart';
 import 'package:gobuddy/utils/config.dart';
+import 'package:gobuddy/utils/util_class.dart';
 // import 'package:providerapp_gobuddy/screens/referandearnpage.dart';
 // import 'package:providerapp_gobuddy/screens/requesttoolpage.dart';
 // import 'package:providerapp_gobuddy/screens/subscriptionScreens/create_subscription.dart';
@@ -12,12 +19,63 @@ import 'package:gobuddy/utils/config.dart';
 // import 'loginscreen.dart';
 
 class AccountPage extends StatefulWidget {
+  const AccountPage({super.key});
+
   @override
   _AccountPageState createState() => _AccountPageState();
 }
 
 class _AccountPageState extends State<AccountPage> {
   // A reusable builder for the list tiles
+  dynamic profileDetails = {};
+  dynamic userData= {};
+   @override
+  void initState() {
+    super.initState();
+
+     var userDataValue = Preferences.getUserDetails();
+      if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
+    callgetProfileAPI();
+  }
+   void callgetProfileAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.profile, {
+         "user_id": userData["user_id"] ?? "4361",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+             setState(() {
+              profileDetails = parsed["profile"];
+            });
+
+          
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
   Widget _buildListTile(IconData icon, String title,
       {Color color = Colors.black, VoidCallback? onTap}) {
     return InkWell(
@@ -136,9 +194,9 @@ class _AccountPageState extends State<AccountPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Akshay Kumar',
-                                      style: TextStyle(
+                                    Text(
+                                       profileDetails["name"]??"",
+                                      style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -283,8 +341,23 @@ class _AccountPageState extends State<AccountPage> {
                                 TextButton(
                                   child: const Text("Yes"),
                                   onPressed: () {
-                                    Navigator.of(context).pushReplacementNamed(
-                                      Config.loginRouteName,);
+                                    // Navigator.of(context).pushReplacementNamed(
+                                    //   Config.loginRouteName,);
+
+
+ Preferences.initSharedPreference();
+
+      Preferences.clearPreference();
+
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+          (Route route) => false);
+
+
+
+
+
+
                                   },
                                 ),
                               ],

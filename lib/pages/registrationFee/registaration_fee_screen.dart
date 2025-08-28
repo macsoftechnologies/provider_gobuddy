@@ -1,10 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 import '../../components/coupon_applied_alert.dart';
 import '../../utils/config.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class RegistrationFeeScreen extends StatefulWidget {
-  const RegistrationFeeScreen({Key? key}) : super(key: key);
+  const RegistrationFeeScreen({super.key});
 
   @override
   State<RegistrationFeeScreen> createState() => _RegistrationFeeScreenState();
@@ -12,11 +18,139 @@ class RegistrationFeeScreen extends StatefulWidget {
 
 class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
   final TextEditingController _referralController = TextEditingController();
-
+ dynamic userData= {};
   @override
   void dispose() {
     _referralController.dispose();
     super.dispose();
+  }
+
+  void callRagerPayment() async {
+    Razorpay razorpay = Razorpay();
+    var options = {
+      'key': 'rzp_live_ZdGjJKZdukGGzL',
+      'amount': 100*300,
+      'name': 'Go buddy',
+      'description': 'One tome registration Fee',
+      'retry': {'enabled': true, 'max_count': 1},
+      'send_sms_hash': true,
+      'prefill': {'contact': '9291575784', 'email': 'test@razorpay.com'},
+      'external': {
+        'wallets': ['paytm'],
+      },
+    };
+    razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentErrorResponse);
+    razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccessResponse);
+    razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWalletSelected);
+    razorpay.open(options);
+  }
+
+  void handlePaymentErrorResponse(PaymentFailureResponse response) {
+    /*
+    * PaymentFailureResponse contains three values:
+    * 1. Error Code
+    * 2. Error Description
+    * 3. Metadata
+    * */
+    showAlertDialog(
+      context,
+      "Payment Failed",
+      "Code: ${response.code}\nDescription: ${response.message}\nMetadata:${response.error.toString()}",
+    );
+  }
+
+  void handlePaymentSuccessResponse(PaymentSuccessResponse response) {
+    /*
+    * Payment Success Response contains three values:
+    * 1. Order ID
+    * 2. Payment ID
+    * 3. Signature
+    * */
+    // showAlertDialog(
+    //   context,
+    //   "Payment Successful",
+    //   "Payment ID: ${response.paymentId}",
+    // );
+
+    callpaymentVeifyAPI(response.paymentId!);
+  }
+
+  void handleExternalWalletSelected(ExternalWalletResponse response) {
+    showAlertDialog(
+      context,
+      "External Wallet Selected",
+      "${response.walletName}",
+    );
+  }
+
+  void showAlertDialog(BuildContext context, String title, String message) {
+    // set up the buttons
+    Widget continueButton = ElevatedButton(
+      child: const Text("Continue"),
+      onPressed: () {},
+    );
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(title: Text(title), content: Text(message));
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  void callpaymentVeifyAPI(String paymentid) async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.onetimeregistrationApi, {
+        "user_id": userData["user_id"] ?? "4361",
+        "amount": "300",
+        "referral_code": "GOB123",
+        "saving_amount": "50",
+        "payment_id": paymentid,
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            showDialog(
+              context: context,
+              builder: (context) {
+                Future.delayed(const Duration(seconds: 3), () {
+                  Navigator.of(context).pop(); // close the dialog first
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(Config.regiSuccessRouteName);
+                });
+
+                return const ReferralDialog(
+                  title: "Payment Successful",
+                  subtitle: "Thank You for purchasing the subscription.",
+                  image: "assets/images/greentick.png",
+                );
+              },
+            );
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   @override
@@ -34,11 +168,7 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF66BB6A),
-                Color(0xFF4CAF50),
-                Color(0xFF388E3C),
-              ],
+              colors: [Color(0xFF66BB6A), Color(0xFF4CAF50), Color(0xFF388E3C)],
             ),
           ),
           child: SingleChildScrollView(
@@ -50,7 +180,10 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: Padding(
-                      padding: EdgeInsets.only(top: 10, right: deviceWidth * 0.02),
+                      padding: EdgeInsets.only(
+                        top: 10,
+                        right: deviceWidth * 0.02,
+                      ),
                       child: Container(
                         width: 36,
                         height: 36,
@@ -88,9 +221,7 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
                             color: Colors.blue.shade100,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: CustomPaint(
-                            painter: ChartPainter(),
-                          ),
+                          child: CustomPaint(painter: ChartPainter()),
                         ),
                         // Hand holding card
                         Positioned(
@@ -119,9 +250,7 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
                           child: SizedBox(
                             width: 20,
                             height: 30,
-                            child: CustomPaint(
-                              painter: PersonPainter(),
-                            ),
+                            child: CustomPaint(painter: PersonPainter()),
                           ),
                         ),
                         // Checkmark
@@ -234,7 +363,9 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
                             controller: _referralController,
                             style: const TextStyle(color: Colors.white),
                             onSubmitted: (_) {
-                              FocusScope.of(context).requestFocus(FocusNode()); // Hides keyboard
+                              FocusScope.of(
+                                context,
+                              ).requestFocus(FocusNode()); // Hides keyboard
                             },
                             decoration: const InputDecoration(
                               hintText: 'Enter code',
@@ -249,7 +380,10 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
                                 borderSide: BorderSide(color: Colors.white),
                               ),
                               focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white, width: 2),
+                                borderSide: BorderSide(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                             ),
                           ),
@@ -274,11 +408,11 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
                             // Delay for 4 seconds then navigate
                             Future.delayed(const Duration(seconds: 4), () {
                               Navigator.of(context).pop(); // Close the dialog
-
-
                             });
 
-                            print('Apply pressed with code: ${_referralController.text}');
+                            print(
+                              'Apply pressed with code: ${_referralController.text}',
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -303,37 +437,37 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
                   SizedBox(height: deviceHeight * 0.05),
 
                   // Continue button
-                 GestureDetector(
-                   onTap: (){
-                     Future.delayed(const Duration(seconds: 4), () {
-                       Navigator.of(context).pop(); // Close the dialog
-                       // Navigator.of(context).pushReplacementNamed(
-                       //   Config.regiSuccessRouteName,);
-                       Navigator.pushNamed(
-                         context,
-                         Config.paymentMethodRouteName,
-                         arguments: {
-                           "amount": 200.0,
-                           "fromScreen": "reg_fee",
-                         },
-                       );
-
-                     });
-                   },
-                   child:  Container(
-                     width: 55,
-                     height: 55,
-                     decoration: const BoxDecoration(
-                       color: Colors.white,
-                       shape: BoxShape.circle,
-                     ),
-                     child: const Icon(
-                       Icons.arrow_forward_ios,
-                       color: Color(0xFF4CAF50),
-                       size: 20,
-                     ),
-                   ),
-                 ),
+                  GestureDetector(
+                    onTap: () {
+                      Future.delayed(const Duration(seconds: 1), () {
+                        callRagerPayment();
+                        //  Navigator.of(context).pop(); // Close the dialog
+                        // Navigator.of(context).pushReplacementNamed(
+                        //   Config.regiSuccessRouteName,);
+                        //  Navigator.pushNamed(
+                        //    context,
+                        //    Config.paymentMethodRouteName,
+                        //    arguments: {
+                        //      "amount": 200.0,
+                        //      "fromScreen": "reg_fee",
+                        //    },
+                        //  );
+                      });
+                    },
+                    child: Container(
+                      width: 55,
+                      height: 55,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Color(0xFF4CAF50),
+                        size: 20,
+                      ),
+                    ),
+                  ),
 
                   SizedBox(height: deviceHeight * 0.04),
                 ],

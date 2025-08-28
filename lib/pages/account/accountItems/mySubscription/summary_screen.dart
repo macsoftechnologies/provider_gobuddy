@@ -7,7 +7,7 @@ import '../../../paymentGateway/payment_screen.dart';
 // import '../payment_screen.dart';
 
 class SummaryScreen extends StatefulWidget {
-  const SummaryScreen({Key? key}) : super(key: key);
+  const SummaryScreen({super.key});
 
   @override
   State<SummaryScreen> createState() => _SummaryScreenState();

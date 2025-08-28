@@ -10,6 +10,8 @@ import '../../../utils/my_colors.dart';
 import '../../../utils/config.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -118,23 +120,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: screenHeight * 0.02),
 
                 /// Back button
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: InkWell(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      height: screenHeight * 0.055,
-                      width: screenHeight * 0.055,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFFd4c900), Color(0xFF00ad20)],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                  ),
-                ),
+                // Align(
+                //   alignment: Alignment.centerLeft,
+                //   child: InkWell(
+                //     onTap: () => Navigator.pop(context),
+                //     child: Container(
+                //       height: screenHeight * 0.055,
+                //       width: screenHeight * 0.055,
+                //       decoration: BoxDecoration(
+                //         gradient: LinearGradient(
+                //           colors: [Color(0xFFd4c900), Color(0xFF00ad20)],
+                //         ),
+                //         borderRadius: BorderRadius.circular(12),
+                //       ),
+                //       child: Icon(Icons.arrow_back, color: Colors.white),
+                //     ),
+                //   ),
+                // ),
 
                 SizedBox(height: screenHeight * 0.05),
 
@@ -244,9 +246,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.of(
-                          context,
-                        ).pushReplacementNamed(Config.registrationRouteName);
+                       
+                         Navigator.pushNamed(
+              // ignore: use_build_context_synchronously
+              context,
+              Config.registrationRouteName,
+            );
                       },
                       child: Text(
                         "Register Here",

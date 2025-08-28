@@ -3,7 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class RequestToolScreen extends StatefulWidget {
-  const RequestToolScreen({Key? key}) : super(key: key);
+  const RequestToolScreen({super.key});
 
   @override
   State<RequestToolScreen> createState() => _RequestToolScreenState();
@@ -375,11 +375,11 @@ class CustomInputField extends StatelessWidget {
   final int maxLines;
 
   const CustomInputField({
-    Key? key,
+    super.key,
     required this.controller,
     required this.hintText,
     required this.maxLines,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -408,12 +408,12 @@ class CustomSubmitButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const CustomSubmitButton({
-    Key? key,
+    super.key,
     required this.deviceWidth,
     required this.text,
     required this.enabled,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

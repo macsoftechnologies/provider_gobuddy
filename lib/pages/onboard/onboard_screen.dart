@@ -9,6 +9,8 @@ import '../../utils/config.dart';
 // import 'loginscreen.dart';
 
 class OnBoardScreenOne extends StatelessWidget {
+  const OnBoardScreenOne({super.key});
+
   @override
   Widget build(BuildContext context) {
     final double deviceHeight = MediaQuery.of(context).size.height;
@@ -125,7 +127,7 @@ class StepItem extends StatelessWidget {
   final double deviceHeight;
   final double deviceWidth;
 
-  const StepItem({
+  const StepItem({super.key, 
     required this.image,
     required this.title,
     required this.subtitle,
@@ -173,6 +175,8 @@ class StepItem extends StatelessWidget {
 
 // OnBoard Screen Two
 class OnBoardScreenTwo extends StatelessWidget {
+  const OnBoardScreenTwo({super.key});
+
   @override
   Widget build(BuildContext context) {
     final double deviceHeight = MediaQuery.of(context).size.height;

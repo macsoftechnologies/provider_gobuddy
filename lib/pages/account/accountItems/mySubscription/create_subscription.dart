@@ -5,7 +5,7 @@ import '../../../../components/custom_back_button.dart';
 import 'create_package_screen.dart';
 
 class CreateSubscriptionScreen extends StatefulWidget {
-  const CreateSubscriptionScreen({Key? key}) : super(key: key);
+  const CreateSubscriptionScreen({super.key});
 
   @override
   State<CreateSubscriptionScreen> createState() =>

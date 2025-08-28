@@ -1,4 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/config.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 import '../account/account_screen.dart';
 import '../orders/my_orders.dart';
@@ -8,13 +15,66 @@ import '../orders/my_orders.dart';
 // import 'package:providerapp_gobuddy/screens/myorderscreen.dart';
 
 class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
   @override
   _DashboardPageState createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
   int currentIndex = 0;
+  dynamic profileDetails = {};
   Color green = Color(0xFF4CAF50);
+  dynamic userData = {};
+
+  @override
+  void initState() {
+    super.initState();
+
+    var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
+
+    callgetProfileAPI();
+  }
+
+  void callgetProfileAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.profile, {
+        "user_id": userData["user_id"] ?? "4361",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            profileDetails = parsed["profile"];
+
+            setState(() {
+              profileDetails = parsed["profile"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +83,6 @@ class _DashboardPageState extends State<DashboardPage> {
       //   backgroundColor: Colors.green,
       //
       // ),
-
       backgroundColor: Colors.grey[100],
       bottomNavigationBar: BottomNavigationBar(
         items: const [
@@ -52,9 +111,9 @@ class _DashboardPageState extends State<DashboardPage> {
       case 0:
         return dashboardScreen();
       case 1:
-        return MyOrdersScreen();//MyOrdersScreen
+        return MyOrdersScreen(); //MyOrdersScreen
       case 2:
-        return AccountPage();//AccountPage
+        return AccountPage(); //AccountPage
       default:
         return dashboardScreen();
     }
@@ -65,9 +124,7 @@ class _DashboardPageState extends State<DashboardPage> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            SizedBox(
-              height: 1,
-            ),
+            SizedBox(height: 1),
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -95,32 +152,42 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Akshay Kumar",
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold)),
-                            Text("AC Technician / Electrician",
-                                style: TextStyle(color: Colors.white70)),
+                            Text(
+                             profileDetails["name"]??"",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              "AC Technician / Electrician",
+                              style: TextStyle(color: Colors.white70),
+                            ),
                           ],
                         ),
                       ),
                       Container(
-                        padding:
-                        EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(8)),
-                        child: Text("PENDING",
-                            style:
-                            TextStyle(color: Colors.white, fontSize: 10)),
-                      )
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "PENDING",
+                          style: TextStyle(color: Colors.white, fontSize: 10),
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: 20),
                   Card(
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 4,
                     child: Container(
                       padding: const EdgeInsets.all(12),
@@ -161,8 +228,11 @@ class _DashboardPageState extends State<DashboardPage> {
                                     const SizedBox(width: 6),
                                     Row(
                                       children: [
-                                        const Icon(Icons.monetization_on,
-                                            color: Colors.green, size: 18),
+                                        const Icon(
+                                          Icons.monetization_on,
+                                          color: Colors.green,
+                                          size: 18,
+                                        ),
                                         const SizedBox(width: 2),
                                         const Text(
                                           "0",
@@ -195,20 +265,24 @@ class _DashboardPageState extends State<DashboardPage> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.orange,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                        BorderRadius.circular(20)),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
                                   ),
                                   child: const Text(
                                     "Total Earnings",
                                     style: TextStyle(
-                                        color: Colors.white, fontSize: 14),
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -224,7 +298,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
-                      Icon(Icons.keyboard_arrow_down, color: Colors.white)
+                      Icon(Icons.keyboard_arrow_down, color: Colors.white),
                     ],
                   ),
                   SizedBox(height: 10),
@@ -234,8 +308,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: ElevatedButton.icon(
                           onPressed: () {},
                           icon: Icon(Icons.calendar_today),
-                          label: Text("My job calendar",
-                              overflow: TextOverflow.ellipsis),
+                          label: Text(
+                            "My job calendar",
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: green,
@@ -247,8 +323,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: ElevatedButton.icon(
                           onPressed: () {},
                           icon: Icon(Icons.qr_code),
-                          label: Text("Show my QR code",
-                              overflow: TextOverflow.ellipsis),
+                          label: Text(
+                            "Show my QR code",
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: green,
@@ -256,7 +334,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -295,11 +373,14 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(amount,
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold)),
+          Text(
+            amount,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           Spacer(),
           Text(title, style: TextStyle(color: Colors.white, fontSize: 14)),
         ],

@@ -4,7 +4,7 @@ class GradientButton extends StatelessWidget {
   final Widget child;
   final VoidCallback onPressed;
 
-  const GradientButton({
+  const GradientButton({super.key, 
     required this.child,
     required this.onPressed,
   });

@@ -14,6 +14,8 @@ import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
 
 class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
+
   @override
   _SignupScreenState createState() => _SignupScreenState();
 }
@@ -83,8 +85,8 @@ callCatDetailsAPI() async {
 
   File? _profileImage;
 
-  TextEditingController _techCategoryController = TextEditingController();
-  TextEditingController _workingCategoryController = TextEditingController();
+  final TextEditingController _techCategoryController = TextEditingController();
+  final TextEditingController _workingCategoryController = TextEditingController();
 
   Map<String, bool> technicianCategories = {
     'AC Technician': false,
@@ -146,7 +148,7 @@ callCatDetailsAPI() async {
                         });
                       },
                     );
-                  }).toList(),
+                  }),
                   Padding(
                     padding: const EdgeInsets.all(14.0),
                     child: SizedBox(

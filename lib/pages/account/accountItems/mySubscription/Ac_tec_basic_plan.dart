@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 // import 'package:providerapp_gobuddy/screens/subscriptionScreens/summary_screen.dart';
 
 class AcTechnicianScreen extends StatefulWidget {
-  const AcTechnicianScreen({Key? key}) : super(key: key);
+  const AcTechnicianScreen({super.key});
 
   @override
   State<AcTechnicianScreen> createState() => _AcTechnicianScreenState();

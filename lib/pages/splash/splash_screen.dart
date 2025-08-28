@@ -47,19 +47,51 @@ void initState() {
     //   navigateToLogin();
 
     // }
-    navigateToonBoard();
+    // navigateToonBoard();
+
+    var user = Preferences.getUserDetails();
+    try{
+      var decoded = json.decode(user!);
+       navigateToVendorHome();
+
+
+    }catch(err){
+      navigateToLogin();
+
+    }
+
   }
   //regiFeeRouteName  onBoardRouteName
 
    void navigateToonBoard() {
-    Navigator.of(context).pushReplacementNamed(
-      Config.loginRouteName, //loginRouteName dashboardcRouteName
-    );
+    // Navigator.of(context).pushReplacementNamed(
+    //   Config.loginRouteName, //loginRouteName dashboardcRouteName
+    // );
+
+     Future.delayed(Duration(seconds: 2), () {
+            Navigator.pushNamed(
+              // ignore: use_build_context_synchronously
+              context,
+              Config.loginRouteName,
+            );
+            //RegistrationFeePage
+          });
 
      
   }
+ void navigateToLogin() {
+    Navigator.of(context).pushReplacementNamed(
+      Config.onBoardRouteName,
+    );
+  }
 
+  void navigateToVendorHome() {
+    Navigator.of(context).pushReplacementNamed(
+      Config.dashboardcRouteName,
+    );
+  }
 
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(

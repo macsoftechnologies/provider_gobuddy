@@ -3,7 +3,7 @@ import 'package:gobuddy/pages/account/accountItems/mySubscription/plan_selection
 // import 'package:providerapp_gobuddy/screens/subscriptionScreens/plan_selection_screen.dart';
 
 class CreatePackageScreen extends StatefulWidget {
-  const CreatePackageScreen({Key? key}) : super(key: key);
+  const CreatePackageScreen({super.key});
 
   @override
   State<CreatePackageScreen> createState() => _CreatePackageScreenState();

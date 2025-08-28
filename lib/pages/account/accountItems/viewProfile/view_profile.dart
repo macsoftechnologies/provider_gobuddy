@@ -11,6 +11,8 @@ import 'package:gobuddy/utils/util_class.dart';
 import '../../../../components/button.dart';
 
 class ViewProfilePage extends StatefulWidget {
+  const ViewProfilePage({super.key});
+
   @override
   _ViewProfilePageState createState() => _ViewProfilePageState();
 }
@@ -28,7 +30,9 @@ class _ViewProfilePageState extends State<ViewProfilePage> {
     super.initState();
 
      var userDataValue = Preferences.getUserDetails();
-      userData =  json.decode(userDataValue!);
+      if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
     callgetProfileAPI();
   }
 
@@ -56,7 +60,7 @@ class _ViewProfilePageState extends State<ViewProfilePage> {
       "location": "Vizag",
       "dob": "24-05-1998",
       "address": addressController.text,
-       "user_id": userData["user_id"],
+       "user_id": userData["user_id"] ?? "4361",
       "alternate_phone_number": "7794954112",
     };
 
@@ -102,7 +106,7 @@ class _ViewProfilePageState extends State<ViewProfilePage> {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.profile, {
-        "user_id": userData["user_id"],
+         "user_id": userData["user_id"] ?? "4361",
       }).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = {};

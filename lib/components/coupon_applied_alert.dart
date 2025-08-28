@@ -6,11 +6,11 @@ class ReferralDialog extends StatelessWidget {
   final String image;
 
   const ReferralDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     required this.image,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

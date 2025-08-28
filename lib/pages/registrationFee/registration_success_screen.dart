@@ -5,6 +5,8 @@ import '../../utils/config.dart';
 // import '../dashboardpage.dart';
 
 class RegistrationSuccessPage extends StatelessWidget {
+  const RegistrationSuccessPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;

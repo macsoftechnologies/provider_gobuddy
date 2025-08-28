@@ -5,6 +5,8 @@ import '../../../../components/button.dart';
 
 
 class ReferAndEarnPage extends StatefulWidget {
+  const ReferAndEarnPage({super.key});
+
   @override
   _ReferAndEarnPageState createState() => _ReferAndEarnPageState();
 }

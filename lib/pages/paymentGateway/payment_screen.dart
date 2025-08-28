@@ -20,13 +20,13 @@ class PaymentMethodScreen extends StatefulWidget {
   final VoidCallback? onPayPressed;
 
   const PaymentMethodScreen({
-    Key? key,
+    super.key,
     required this.amount,
     required this.fromScreen,
     this.onBackPressed,
     this.onPaymentMethodSelected,
     this.onPayPressed,
-  }) : super(key: key);
+  });
 
   @override
   State<PaymentMethodScreen> createState() => _PaymentMethodScreenState();
@@ -270,7 +270,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            Container(
+            SizedBox(
               width: 44,
               height: 44,
               // decoration: BoxDecoration(
@@ -430,6 +430,8 @@ enum PaymentMethod { phonePe, googlePay, paytm, upiId }
 
 // Usage Example:
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

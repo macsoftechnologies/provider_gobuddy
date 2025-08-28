@@ -19,12 +19,12 @@ class OTPVerificationScreen extends StatefulWidget {
   final String userid;
 
   const OTPVerificationScreen({
-    Key? key,
+    super.key,
     required this.phoneNumber,
     required this.fromScreen, // <-- Required param
     // ignore: non_constant_identifier_names
     required this.userid
-  }) : super(key: key);
+  });
 
   @override
   State<OTPVerificationScreen> createState() => _OTPVerificationScreenState();
