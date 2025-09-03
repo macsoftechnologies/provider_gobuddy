@@ -12,4 +12,5 @@ class EndPoints {
   static const String newlogin = "${newbaseUrl}newlogin";
   static const String profile = "${newbaseUrl}profile";
   static const String updateProfile = "${newbaseUrl}update_profile";
+  static const String tools = "${newbaseUrl}requesttools";
 }

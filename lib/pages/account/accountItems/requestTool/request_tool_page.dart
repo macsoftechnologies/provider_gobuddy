@@ -1,4 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/config.dart';
+import 'package:gobuddy/utils/util_class.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -16,11 +23,59 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
 
   int _selectedTabIndex = 0; // 0 = Send Request, 1 = Requested Tools
 
+   List<dynamic> toolsDetails  =[];
+
+  dynamic userData = {};
+
+  void callgetgetToolsAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.tools, {
+        "user_id": userData["user_id"] ?? "4361",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            toolsDetails = parsed["requesttools"];
+
+            setState(() {
+              toolsDetails = parsed["requesttools"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _toolNameController.addListener(_updateButtonState);
     _descriptionController.addListener(_updateButtonState);
+
+    var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
+
+    callgetgetToolsAPI();
   }
 
   @override
@@ -35,8 +90,9 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile =
-    await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
     if (pickedFile != null) {
       setState(() {
         _selectedImage = File(pickedFile.path);
@@ -77,10 +133,7 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
         ),
         title: const Text(
           "Request Tool",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
       ),
       body: SingleChildScrollView(
@@ -121,7 +174,10 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
                   ),
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => setState(() => _selectedTabIndex = 1),
+                      onTap: () {
+                        setState(() => _selectedTabIndex = 1);
+                        callgetgetToolsAPI();
+                      },
                       child: Column(
                         children: [
                           Text(
@@ -183,8 +239,10 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// Tool Name
-          const Text("Tool Name",
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+          const Text(
+            "Tool Name",
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+          ),
           SizedBox(height: deviceHeight * 0.01),
           CustomInputField(
             controller: _toolNameController,
@@ -194,8 +252,10 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
           SizedBox(height: deviceHeight * 0.02),
 
           /// Description
-          const Text("Description",
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+          const Text(
+            "Description",
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+          ),
           SizedBox(height: deviceHeight * 0.01),
           CustomInputField(
             controller: _descriptionController,
@@ -205,8 +265,10 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
           SizedBox(height: deviceHeight * 0.02),
 
           /// Tool Image
-          const Text("Tool Image",
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+          const Text(
+            "Tool Image",
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+          ),
           SizedBox(height: deviceHeight * 0.01),
           Row(
             children: [
@@ -220,9 +282,9 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
                     borderRadius: BorderRadius.circular(12),
                     image: _selectedImage != null
                         ? DecorationImage(
-                      image: FileImage(_selectedImage!),
-                      fit: BoxFit.cover,
-                    )
+                            image: FileImage(_selectedImage!),
+                            fit: BoxFit.cover,
+                          )
                         : null,
                   ),
                   child: _selectedImage == null
@@ -276,7 +338,7 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
 
   /// Requested Tools List UI
   Widget _buildRequestedToolsList(double deviceWidth, double deviceHeight) {
-    return Container(
+    return Column(children:<Widget>[for(var item in toolsDetails ) Container(
       width: double.infinity,
       padding: EdgeInsets.all(deviceWidth * 0.04),
       decoration: BoxDecoration(
@@ -318,16 +380,16 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
             "Tool Name",
             style: TextStyle(color: Colors.grey, fontSize: 14),
           ),
-          const Text(
-            "Tube Bender",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          Text(
+            item["tool_name"]??"",
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           SizedBox(height: deviceHeight * 0.01),
 
           /// Description
-          const Text(
-            "Description",
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+          Text(
+           item["description"]??"",
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
           ),
           const Text(
             "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
@@ -346,13 +408,12 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
             width: deviceWidth * 0.2,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.grey,
-                width: 1.0,
-              ),
+              border: Border.all(color: Colors.grey, width: 1.0),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(11), // Slightly smaller to account for border
+              borderRadius: BorderRadius.circular(
+                11,
+              ), // Slightly smaller to account for border
               child: Padding(
                 padding: EdgeInsets.all(8), // Inner padding
                 child: Image.asset(
@@ -364,7 +425,7 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
           ),
         ],
       ),
-    );
+    )]);
   }
 }
 
@@ -433,13 +494,13 @@ class CustomSubmitButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: enabled
                 ? const LinearGradient(
-              colors: [Colors.green, Colors.yellow],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            )
+                    colors: [Colors.green, Colors.yellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
                 : LinearGradient(
-              colors: [Colors.grey.shade300, Colors.grey.shade300],
-            ),
+                    colors: [Colors.grey.shade300, Colors.grey.shade300],
+                  ),
             borderRadius: BorderRadius.circular(25),
           ),
           child: Container(
