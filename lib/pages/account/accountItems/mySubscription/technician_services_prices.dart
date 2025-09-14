@@ -37,8 +37,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     {"jobs": 60, "price": 2399},
   ];
   List<dynamic> subcatDetails = [];
-    List<dynamic> serviceDetails = [];
- List<dynamic> packages = [];
+  List<dynamic> serviceDetails = [];
+  List<dynamic> packages = [];
   dynamic userData = {};
 
   void callgetPlansAPI() async {
@@ -47,7 +47,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.packagesApi, {
-         "sub_category_id": "27",
+        "sub_category_id": "27",
       }).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = {};
@@ -77,13 +77,14 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
       UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
     }
   }
-void callgetServicesAPI() async {
+
+  void callgetServicesAPI(String id) async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.servicesApi, {
-        "sub_category_id": "27",
+        "sub_category_id": id,
       }).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = {};
@@ -113,6 +114,7 @@ void callgetServicesAPI() async {
       UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
     }
   }
+
   void callgetSubCatAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
@@ -131,6 +133,8 @@ void callgetServicesAPI() async {
             setState(() {
               subcatDetails = parsed["sub_category"];
             });
+
+            callgetServicesAPI(subcatDetails[0]["id"]);
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -160,7 +164,6 @@ void callgetServicesAPI() async {
     }
 
     callgetSubCatAPI();
-    callgetServicesAPI();
     callgetPlansAPI();
   }
 
@@ -191,8 +194,9 @@ void callgetServicesAPI() async {
                     children: [
                       Positioned.fill(
                         child: Image.network(
-                        // ignore: prefer_interpolation_to_compose_strings
-                        "https://admin.gobuddyindia.com//assets//images//"+widget.categoryName["categoryName"]["image"],
+                          // ignore: prefer_interpolation_to_compose_strings
+                          "https://admin.gobuddyindia.com//assets//images//" +
+                              widget.categoryName["categoryName"]["image"],
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -276,38 +280,41 @@ void callgetServicesAPI() async {
                               },
                               child: isPackageSelected
                                   ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                    size: 28,
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    'Added',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.green[700],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              )
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green,
+                                          size: 28,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          'Added',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.green[700],
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    )
                                   : Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 18, vertical: 6),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.green),
-                                ),
-                                child: const Text(
-                                  "Add",
-                                  style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                              ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: Colors.green),
+                                      ),
+                                      child: const Text(
+                                        "Add",
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ],
                         ),
@@ -320,25 +327,40 @@ void callgetServicesAPI() async {
                               // ignore: unused_local_variable
                               <Widget>[
                                 for (var item in subcatDetails)
-                                Container(
-                                  height: deviceHeight * 0.1,
-                                  width: deviceWidth * 0.25,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Colors.green, width: 2),
-                                    borderRadius: BorderRadius.circular(10),
-                                    image: DecorationImage(
-                                      fit: BoxFit.cover,
-                                      // ignore: prefer_interpolation_to_compose_strings
-                                      image: NetworkImage("https://admin.gobuddyindia.com//assets//images//"+item["sub_image"]),
+                                  GestureDetector(
+                                    onTap: () {
+                                    callgetServicesAPI(item["id"]);
+
+
+                                    },
+                                    child: Container(
+                                      height: deviceHeight * 0.1,
+                                      width: deviceWidth * 0.25,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.green,
+                                          width: 2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                        image: DecorationImage(
+                                          fit: BoxFit.cover,
+                                          // ignore: prefer_interpolation_to_compose_strings
+                                          image: NetworkImage(
+                                            "https://admin.gobuddyindia.com//assets//images//" +
+                                                item["sub_image"],
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
                                 const SizedBox(height: 5),
-                                const Text("Split AC",
-                                    style: TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.w600))
+                                const Text(
+                                  "Split AC",
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ],
                         ),
                         SizedBox(height: deviceHeight * 0.02),
@@ -355,7 +377,10 @@ void callgetServicesAPI() async {
                         // Dynamic Cards from JSON
                         Column(
                           children: serviceDetails.map((item) {
-                            return serviceCard(item["title"], item["service_image"]);
+                            return serviceCard(
+                              item["title"],
+                              item["service_image"],
+                            );
                           }).toList(),
                         ),
                       ],
