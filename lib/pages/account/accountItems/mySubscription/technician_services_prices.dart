@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
-// import 'package:providerapp_gobuddy/screens/subscriptionScreens/summary_screen.dart';
 
-class AcTechnicianScreen extends StatefulWidget {
-  const AcTechnicianScreen({super.key});
+import '../../../../utils/config.dart';
+
+class TechnicianServicesPrices extends StatefulWidget {
+  final dynamic categoryName;
+  final String planType;
+
+  const TechnicianServicesPrices({
+    super.key,
+    required this.categoryName,
+    required this.planType,
+  });
 
   @override
-  State<AcTechnicianScreen> createState() => _AcTechnicianScreenState();
+  State<TechnicianServicesPrices> createState() =>
+      _TechnicianServicesPricesState();
 }
 
-class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
+class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   double deviceHeight = 0;
   double deviceWidth = 0;
 
@@ -68,14 +77,17 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                       Positioned(
                         left: 16,
                         top: 16,
-                        child: CircleAvatar(
-                          backgroundColor: Colors.white,
-                          child: Icon(Icons.arrow_back, color: Colors.green),
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const CircleAvatar(
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.arrow_back, color: Colors.green),
+                          ),
                         ),
                       ),
                       Center(
                         child: Text(
-                          "AC Technician",
+                          widget.categoryName["categoryName"]["category"]!??"",
                           style: TextStyle(
                             fontSize: deviceWidth * 0.06,
                             fontWeight: FontWeight.w600,
@@ -96,7 +108,7 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Basic Plan",
+                          widget.planType,
                           style: TextStyle(
                             fontSize: deviceWidth * 0.05,
                             fontWeight: FontWeight.bold,
@@ -186,8 +198,8 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                                   height: deviceHeight * 0.1,
                                   width: deviceWidth * 0.25,
                                   decoration: BoxDecoration(
-                                    border:
-                                    Border.all(color: Colors.green, width: 2),
+                                    border: Border.all(
+                                        color: Colors.green, width: 2),
                                     borderRadius: BorderRadius.circular(10),
                                     image: const DecorationImage(
                                       fit: BoxFit.cover,
@@ -254,7 +266,8 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
@@ -263,14 +276,16 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                           blurRadius: 8,
                           offset: Offset(0, -2))
                     ],
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Top Row with Grey Border
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(10),
@@ -281,16 +296,17 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                             // Left Side (Title & Plan)
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
+                              children: [
                                 Text(
-                                  "AC Technician",
-                                  style: TextStyle(
-                                      fontSize: 14, fontWeight: FontWeight.w600),
+                                  widget.categoryName["categoryName"]["category"]!??"",
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
-                                  "Basic Plan (20 Jobs)",
-                                  style: TextStyle(
+                                  "${widget.planType} (20 Jobs)",
+                                  style: const TextStyle(
                                       fontSize: 12, color: Colors.black54),
                                 ),
                               ],
@@ -300,7 +316,8 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                             Row(
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.black54),
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.black54),
                                   onPressed: () {
                                     setState(() {
                                       isPackageSelected = false;
@@ -310,7 +327,8 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                                 const Text(
                                   "₹999",
                                   style: TextStyle(
-                                      fontSize: 16, fontWeight: FontWeight.w600),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -338,13 +356,7 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                         children: [
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () {
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(builder: (context) => SummaryScreen()),
-                                // );
-
-                              },
+                              onPressed: () {},
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: Colors.green),
                                 shape: RoundedRectangleBorder(
@@ -360,19 +372,21 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () {
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(builder: (context) => SummaryScreen()),
-                                // );
+                                Navigator.pushNamed(
+                                  context,
+                                  Config.planSummaryRouteName,
+
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10)),
                               ),
-                              child: const Text("View Summary",style: TextStyle(
-                                color: Colors.white
-                              ),),
+                              child: const Text(
+                                "View Summary",
+                                style: TextStyle(color: Colors.white),
+                              ),
                             ),
                           ),
                         ],
@@ -381,7 +395,6 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                   ),
                 ),
               ),
-
           ],
         ),
       ),

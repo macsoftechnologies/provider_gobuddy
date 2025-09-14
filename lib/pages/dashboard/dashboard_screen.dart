@@ -235,7 +235,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                         ),
                                         const SizedBox(width: 2),
                                         const Text(
-                                          "0",
+                                          "125",
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
@@ -348,10 +348,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 children: [
-                  statusCard("₹ 0\n(0)", "Current Month", Color(0xFFFF7DA7)),
-                  statusCard("₹ 0\n(0)", "Pending Orders", Color(0xFF62D5F8)),
-                  statusCard("₹ 0\n(0)", "Today Orders", Color(0xFF58C75E)),
-                  statusCard("₹ 0\n(0)", "Missed Orders", Color(0xFFFF913C)),
+                  statusCard("₹ 2,500\n(20)", "Current Month", Color(0xFFFF7DA7)),
+                  statusCard("₹ 700\n(10)", "Pending Orders", Color(0xFF62D5F8)),
+                  statusCard("₹ 500\n(5)", "Today Orders", Color(0xFF58C75E)),
+                  statusCard("₹ 100\n(2)", "Missed Orders", Color(0xFFFF913C)),
                 ],
               ),
             ),

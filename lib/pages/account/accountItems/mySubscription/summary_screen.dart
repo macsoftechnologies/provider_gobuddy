@@ -411,10 +411,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
                     ),
                     GestureDetector(
                       onTap: (){
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => PaymentMethodScreen(amount: totalPrice.toDouble(), fromScreen: 'subscription',)),
-                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(builder: (context) => PaymentMethodScreen(amount: totalPrice.toDouble(), fromScreen: 'subscription',)),
+                        // );
                       },
                       child: Container(
                         height: 50,

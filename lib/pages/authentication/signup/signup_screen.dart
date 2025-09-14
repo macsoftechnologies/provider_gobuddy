@@ -30,7 +30,8 @@ class _SignupScreenState extends State<SignupScreen> {
   void initState() {
     super.initState();
 
-   callLocation();
+  //  callLocation();
+  callCatDetailsAPI();
   
   }
 

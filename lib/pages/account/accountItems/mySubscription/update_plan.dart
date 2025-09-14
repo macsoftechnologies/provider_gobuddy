@@ -26,7 +26,7 @@ class _UpdatePlanScreenState extends State<UpdatePlanScreen> {
       "categories": [
         {
           "name": "Split AC",
-          "image": "assets/ac.png",
+          "image": "assets/images/ac.png",
           "services": [
             {
               "name": "Dry Servicing a Split Ac",

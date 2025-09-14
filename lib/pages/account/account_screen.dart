@@ -294,16 +294,29 @@ class _AccountPageState extends State<AccountPage> {
                       Icons.description_outlined, "Terms & Conditions",
                       onTap: () {
                         // Handle tap
+                        Navigator.pushNamed(
+                          context,
+                          Config.termsConditionsRouteName,
+                          //notificationsRouteName
+                        );
                       }),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
                   _buildListTile(Icons.shield_outlined, "Privacy & Policy",
                       onTap: () {
                         // Handle tap
+                        Navigator.pushNamed(
+                          context,
+                          Config.privacyPolicyRouteName, //customerReviewsRouteName
+                        );
                       }),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
                   _buildListTile(Icons.support_agent_outlined, "Support",
                       onTap: () {
                         // Handle tap
+                        Navigator.pushNamed(
+                          context,
+                          Config.supportRouteName, //showQRCodeRouteName
+                        );
                       }),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
                   _buildListTile(Icons.emoji_events_outlined, "Refer & Earn",

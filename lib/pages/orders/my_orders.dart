@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../../utils/config.dart';
 import '../../utils/my_colors.dart';
 
 
@@ -136,7 +137,14 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => {
+                      Navigator.pushNamed(
+                        // ignore: use_build_context_synchronously
+                        context,
+                        Config.dashboardcRouteName,
+
+                      )
+                    },
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -181,8 +189,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         child: Text(
                           tab,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black,
-                            fontWeight: FontWeight.w500,fontSize: 11
+                              color: isSelected ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w500,fontSize: 11
                           ),
                         ),
                       ),
@@ -220,85 +228,94 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Widget _buildOrderCard(dynamic order, double deviceWidth) {
     final status = order["status"];
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 6,
-              spreadRadius: 2,
-              offset: const Offset(0, 3))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image and Details
-          Row(
+    return
+      GestureDetector(
+        onTap: (){
+          Navigator.of(context).pushReplacementNamed(
+            Config.orderDetailsRouteName, //loginRouteName dashboardcRouteName
+          );
+
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.shade200,
+                  blurRadius: 6,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 3))
+            ],
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  order["image"],
-                  width: deviceWidth * 0.25,
-                  height: deviceWidth * 0.25,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              SizedBox(width: deviceWidth * 0.04),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(order["title"],
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text(order["service"],
-                        style: const TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 6),
-                    Row(
+              // Image and Details
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      order["image"],
+                      width: deviceWidth * 0.25,
+                      height: deviceWidth * 0.25,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  SizedBox(width: deviceWidth * 0.04),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.location_on,
-                            size: 16, color: Colors.black54),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(order["address"],
-                              style: const TextStyle(fontSize: 13),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis),
+                        Text(order["title"],
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text(order["service"],
+                            style: const TextStyle(color: Colors.grey)),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on,
+                                size: 16, color: Colors.black54),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(order["address"],
+                                  style: const TextStyle(fontSize: 13),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today,
+                                size: 16, color: Colors.black54),
+                            const SizedBox(width: 4),
+                            Text("${order["date"]}   ${order["time"]}",
+                                style: const TextStyle(fontSize: 13)),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.calendar_today,
-                            size: 16, color: Colors.black54),
-                        const SizedBox(width: 4),
-                        Text("${order["date"]}   ${order["time"]}",
-                            style: const TextStyle(fontSize: 13)),
-                      ],
-                    ),
-                  ],
-                ),
-              )
+                  )
+                ],
+              ),
+              const Divider(),
+
+              // Bottom UI depends on Status
+              if (status == "Pending") _buildPendingUI(order),
+              if (status == "Open") _buildOpenUI(order),
+              if (status == "Completed") _buildCompletedUI(order),
+              if (status == "Cancelled") _buildCancelledUI(order),
             ],
           ),
-          const Divider(),
-
-          // Bottom UI depends on Status
-          if (status == "Pending") _buildPendingUI(order),
-          if (status == "Open") _buildOpenUI(order),
-          if (status == "Completed") _buildCompletedUI(order),
-          if (status == "Cancelled") _buildCancelledUI(order),
-        ],
-      ),
-    );
+        ),
+      );
   }
 
   /// UI for Pending Orders

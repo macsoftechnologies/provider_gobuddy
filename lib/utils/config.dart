@@ -227,4 +227,19 @@ static const ekycRouteName='ekyc verification screen';//DashboardPage
   static const mySubscriptionsRouteName='my Subscriptions Screen';
   static const referEarnRouteName='Refer And Earn Screen';
   static const requestToolRouteName='Request Tool Screen';//MyOrdersScreen
+  static const jobCalendarRouteName='Display no of jobs append to provider in Calendar';//NotificationsScreen
+  static const notificationsRouteName='Notifications Screen';
+  static const customerReviewsRouteName='Customer Reviews Screen';//QRCodeScreen  CustomerReviewsScreen
+  static const showQRCodeRouteName='Display Provider QR code Screen';//QRCodeScreen
+  static const createVacationRouteName='Create Vacation Screen';//SetOnVacationScreen
+//TermsAndConditionsScreen
+  static const termsConditionsRouteName='Terms And Condions Screen';//TermsAndConditionsScreen
+
+  static const privacyPolicyRouteName='Privacy And Policy Screen';//PrivacyAndPolicyScreen
+//SupportScreen
+  static const supportRouteName='Support Screen';//SupportScreen CreatePackageScreen
+  static const createPackageRouteName='Create Package Screen';//CreatePackageScreen
+  static const technicianServicesPricesRouteName='Technician Services Prices Screen';
+//TechnicianServicesPrices SummaryScreen
+  static const planSummaryRouteName='Plan Summary screen Screen';//SummaryScreen
 }

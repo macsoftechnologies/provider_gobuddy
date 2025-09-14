@@ -56,7 +56,7 @@ void initState() {
 
 
     }catch(err){
-      navigateToLogin();
+      navigateToVendorHome(); // sk changed navigateToLogin()
 
     }
 

@@ -29,7 +29,7 @@ class _RegistrationFeeScreenState extends State<RegistrationFeeScreen> {
     Razorpay razorpay = Razorpay();
     var options = {
       'key': 'rzp_live_ZdGjJKZdukGGzL',
-      'amount': 100*300,
+      'amount': 100,
       'name': 'Go buddy',
       'description': 'One tome registration Fee',
       'retry': {'enabled': true, 'max_count': 1},

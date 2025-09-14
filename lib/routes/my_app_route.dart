@@ -8,15 +8,29 @@ import 'package:gobuddy/pages/authentication/signup/signup_screen.dart';
 import 'package:gobuddy/utils/config.dart';
 import 'package:gobuddy/utils/my_colors.dart';
 
+import '../pages/account/accountItems/mySubscription/create_package_screen.dart';
 import '../pages/account/accountItems/mySubscription/my_subscriptions.dart';
+import '../pages/account/accountItems/mySubscription/subscriptions.dart';
+import '../pages/account/accountItems/mySubscription/summary_screen.dart';
+import '../pages/account/accountItems/mySubscription/technician_services_prices.dart';
+import '../pages/account/accountItems/privacyPolicy/privacy_policy.dart';
 import '../pages/account/accountItems/referAndEarn/refer_earn.dart';
 import '../pages/account/accountItems/requestTool/request_tool_page.dart';
+import '../pages/account/accountItems/support/support_screen.dart';
+import '../pages/account/accountItems/termsAndConditions/terms_conditions.dart';
 import '../pages/account/accountItems/viewProfile/view_profile.dart';
 import '../pages/account/account_screen.dart';
 import '../pages/dashboard/dashboard_screen.dart';
+import '../pages/displayQRCode/provider_qr_code.dart';
 import '../pages/ekycVerification/ekyc_verification.dart';
+import '../pages/jobCalendar/create_vacation_days.dart';
+import '../pages/notifications/notifications_screen.dart';
+import '../pages/orders/job_calendar.dart';
+import '../pages/orders/my_orders.dart';
+import '../pages/orders/order_details.dart';
 import '../pages/otpVerification/otp_verification.dart';
 import '../pages/paymentGateway/payment_screen.dart';
+import '../pages/ratings/customer_ratings.dart';
 import '../pages/registrationFee/registaration_fee_screen.dart';
 import '../pages/registrationFee/registration_success_screen.dart';//OTPVerificationScreen
 //EKYCVerificationPage
@@ -59,10 +73,22 @@ class MyAppRouteState extends State<MyAppRoute> {
 
         Config.accountRouteName: (ctx) =>  AccountPage(),
         Config.viewProfileRouteName: (ctx) =>  ViewProfilePage(),
-        Config.mySubscriptionsRouteName: (ctx) =>  MySubscriptionsScreen(),
+        Config.mySubscriptionsRouteName: (ctx) =>  SubscriptionScreen(),
         Config.referEarnRouteName: (ctx) =>  ReferAndEarnPage(), //requestToolRouteName
         Config.requestToolRouteName: (ctx) =>  RequestToolScreen(),
         //Config.myOrdersRouteName: (ctx) =>  MyOrdersScreen(),
+        Config.myOrdersRouteName: (ctx) =>  MyOrdersScreen(),
+        Config.orderDetailsRouteName: (ctx) =>  OrderDetailsScreen(),//
+        Config.jobCalendarRouteName: (ctx) =>  JobCalendarScreen(),//JobCalendarScreen
+        Config.notificationsRouteName: (ctx) =>  NotificationsScreen(),
+        Config.customerReviewsRouteName: (ctx) =>  CustomerReviewsScreen(),//customerReviewsRouteName
+        Config.showQRCodeRouteName: (ctx) =>  MyQRCodeScreen(),
+        Config.createVacationRouteName: (ctx) =>  SetOnVacationScreen(),
+        Config.termsConditionsRouteName: (ctx) =>  TermsAndConditionsScreen(),
+        Config.privacyPolicyRouteName: (ctx) =>  PrivacyAndPolicyScreen(),
+        Config.supportRouteName: (ctx) =>  SupportScreen(),
+        Config.createPackageRouteName: (ctx) =>  CreatePackageScreen(),
+        Config.planSummaryRouteName: (ctx) =>  SummaryScreen(),
 
       },
       // onGenerateRoute: (settings) {
@@ -90,6 +116,18 @@ class MyAppRouteState extends State<MyAppRoute> {
             builder: (_) => PaymentMethodScreen(
               amount: args["amount"] ?? 0.0,
               fromScreen: args['fromScreen'] ?? '',
+
+            ),
+          );
+        }
+
+        if (settings.name == Config.technicianServicesPricesRouteName) {
+          final args = settings.arguments as Map<String, dynamic>;
+
+          return MaterialPageRoute(
+            builder: (_) => TechnicianServicesPrices(
+              categoryName: args ,
+              planType: args['planType'] ?? '',
 
             ),
           );
