@@ -191,7 +191,7 @@ class _CreatePackageScreenState extends State<CreatePackageScreen> {
                       },
                       child: _buildCategoryCard(
                         packageDetails[index]["category"]!,
-                        "assets/images/noimage124.png",
+                         packageDetails[index],
                         deviceWidth,
                         deviceHeight,
                       ),
@@ -225,7 +225,7 @@ class _CreatePackageScreenState extends State<CreatePackageScreen> {
 
   /// Category Card
   Widget _buildCategoryCard(
-      String title, String imagePath, double deviceWidth, double deviceHeight) {
+      String title, dynamic package, double deviceWidth, double deviceHeight) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: deviceWidth * 0.04,
@@ -248,8 +248,8 @@ class _CreatePackageScreenState extends State<CreatePackageScreen> {
           /// Service Image
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              imagePath,
+            child: Image.network(
+               "https://admin.gobuddyindia.com//assets//images//" + package["image"],
               height: 55,
               width: 55,
               fit: BoxFit.cover,

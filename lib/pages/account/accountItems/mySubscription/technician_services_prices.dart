@@ -321,48 +321,50 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         SizedBox(height: deviceHeight * 0.02),
 
                         // AC Type Selection
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children:
-                              // ignore: unused_local_variable
-                              <Widget>[
-                                for (var item in subcatDetails)
-                                  GestureDetector(
+                        SizedBox(
+                          height:
+                              deviceHeight * 0.15, // Set a fixed height for the horizontal list
+                          child: ListView.builder(
+                            scrollDirection: Axis
+                                .horizontal, // Important: Set scroll direction to horizontal
+                            itemCount: subcatDetails.length, // Number of items in the list
+                            itemBuilder: (context, index) {
+                              return  GestureDetector(
                                     onTap: () {
-                                    callgetServicesAPI(item["id"]);
+                                    callgetServicesAPI( subcatDetails[index]["id"]);
 
 
                                     },
                                     child: Container(
-                                      height: deviceHeight * 0.1,
-                                      width: deviceWidth * 0.25,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Colors.green,
-                                          width: 2,
-                                        ),
-                                        borderRadius: BorderRadius.circular(10),
-                                        image: DecorationImage(
-                                          fit: BoxFit.cover,
-                                          // ignore: prefer_interpolation_to_compose_strings
-                                          image: NetworkImage(
-                                            "https://admin.gobuddyindia.com//assets//images//" +
-                                                item["sub_image"],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                const SizedBox(height: 5),
-                                const Text(
-                                  "Split AC",
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                width: deviceHeight * 0.15, // Width of each item
+                                margin: const EdgeInsets.all(1.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueGrey[100],
+                                  borderRadius: BorderRadius.circular(2.0),
                                 ),
-                              ],
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // Replace with your actual image asset or network image
+                                    Image.network(
+                                      // ignore: prefer_interpolation_to_compose_strings
+                                      "https://admin.gobuddyindia.com//assets//images//" + subcatDetails[index]["sub_image"], // Example image path
+                                      height: deviceHeight * 0.1,
+                                      width: deviceHeight * 0.11,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      subcatDetails[index]["sub_category"],
+                                      style: const TextStyle(fontSize: 10,color: Colors.green,),
+                                    ),
+                                  ],
+                                ),
+                              ));
+                            },
+                          ),
                         ),
+
                         SizedBox(height: deviceHeight * 0.02),
 
                         const Text(
