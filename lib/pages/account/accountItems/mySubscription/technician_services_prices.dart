@@ -1,4 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 import '../../../../utils/config.dart';
 
@@ -30,21 +36,139 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     {"jobs": 40, "price": 1499},
     {"jobs": 60, "price": 2399},
   ];
+  List<dynamic> subcatDetails = [];
+    List<dynamic> serviceDetails = [];
+ List<dynamic> packages = [];
+  dynamic userData = {};
+
+  void callgetPlansAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.packagesApi, {
+         "sub_category_id": "27",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            packages = parsed["package"];
+
+            setState(() {
+              packages = parsed["package"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+void callgetServicesAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.servicesApi, {
+        "sub_category_id": "27",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            serviceDetails = parsed["services"];
+
+            setState(() {
+              serviceDetails = parsed["services"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+  void callgetSubCatAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.catsubCat, {
+        "category_id": widget.categoryName["categoryName"]["id"]! ?? "" ?? "1",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            subcatDetails = parsed["sub_category"];
+
+            setState(() {
+              subcatDetails = parsed["sub_category"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
+
+    callgetSubCatAPI();
+    callgetServicesAPI();
+    callgetPlansAPI();
+  }
 
   // Sample JSON data for service cards
   final List<Map<String, dynamic>> serviceList = [
-    {
-      "title": "Dry Servicing a Split Ac",
-      "image": "assets/images/ac.png",
-    },
-    {
-      "title": "AC Installation",
-      "image": "assets/images/ac.png",
-    },
-    {
-      "title": "Jet servicing of split AC",
-      "image": "assets/images/ac.png",
-    },
+    {"title": "Dry Servicing a Split Ac", "image": "assets/images/ac.png"},
+    {"title": "AC Installation", "image": "assets/images/ac.png"},
+    {"title": "Jet servicing of split AC", "image": "assets/images/ac.png"},
   ];
 
   @override
@@ -66,14 +190,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                   child: Stack(
                     children: [
                       Positioned.fill(
-                        child: Image.asset(
-                          "assets/images/ac.png",
+                        child: Image.network(
+                        // ignore: prefer_interpolation_to_compose_strings
+                        "https://admin.gobuddyindia.com//assets//images//"+widget.categoryName["categoryName"]["image"],
                           fit: BoxFit.cover,
                         ),
                       ),
-                      Container(
-                        color: Colors.black.withOpacity(0.2),
-                      ),
+                      Container(color: Colors.black.withOpacity(0.2)),
                       Positioned(
                         left: 16,
                         top: 16,
@@ -87,7 +210,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                       ),
                       Center(
                         child: Text(
-                          widget.categoryName["categoryName"]["category"]!??"",
+                          widget.categoryName["categoryName"]["category"]! ??
+                              "",
                           style: TextStyle(
                             fontSize: deviceWidth * 0.06,
                             fontWeight: FontWeight.w600,
@@ -102,8 +226,9 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(
-                        horizontal: deviceWidth * 0.05,
-                        vertical: deviceHeight * 0.02),
+                      horizontal: deviceWidth * 0.05,
+                      vertical: deviceHeight * 0.02,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -117,34 +242,34 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         ),
                         SizedBox(height: deviceHeight * 0.015),
 
-                        // Plan Price Row
+                        //Plan Price Row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    "₹999",
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text("20 Jobs",
-                                    style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                                const Icon(Icons.keyboard_arrow_down),
-                              ],
-                            ),
+                            // Row(
+                            //   children: [
+                            //     Container(
+                            //       padding: const EdgeInsets.symmetric(
+                            //           horizontal: 12, vertical: 6),
+                            //       decoration: BoxDecoration(
+                            //         color: Colors.orange,
+                            //         borderRadius: BorderRadius.circular(20),
+                            //       ),
+                            //       child: const Text(
+                            //         "₹999",
+                            //         style: TextStyle(
+                            //             color: Colors.white,
+                            //             fontWeight: FontWeight.bold),
+                            //       ),
+                            //     ),
+                            //     const SizedBox(width: 10),
+                            //     const Text("20 Jobs",
+                            //         style: TextStyle(
+                            //             fontSize: 15,
+                            //             fontWeight: FontWeight.w500)),
+                            //     const Icon(Icons.keyboard_arrow_down),
+                            //   ],
+                            // ),
                             GestureDetector(
                               onTap: () {
                                 _showJobPackageBottomSheet();
@@ -191,9 +316,10 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         // AC Type Selection
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Column(
-                              children: [
+                          children:
+                              // ignore: unused_local_variable
+                              <Widget>[
+                                for (var item in subcatDetails)
                                 Container(
                                   height: deviceHeight * 0.1,
                                   width: deviceWidth * 0.25,
@@ -201,9 +327,10 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                     border: Border.all(
                                         color: Colors.green, width: 2),
                                     borderRadius: BorderRadius.circular(10),
-                                    image: const DecorationImage(
+                                    image: DecorationImage(
                                       fit: BoxFit.cover,
-                                      image: AssetImage("assets/images/ac.png"),
+                                      // ignore: prefer_interpolation_to_compose_strings
+                                      image: NetworkImage("https://admin.gobuddyindia.com//assets//images//"+item["sub_image"]),
                                     ),
                                   ),
                                 ),
@@ -211,45 +338,24 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                 const Text("Split AC",
                                     style: TextStyle(
                                         color: Colors.green,
-                                        fontWeight: FontWeight.w600)),
+                                        fontWeight: FontWeight.w600))
                               ],
-                            ),
-                            Column(
-                              children: [
-                                Container(
-                                  height: deviceHeight * 0.1,
-                                  width: deviceWidth * 0.25,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    image: const DecorationImage(
-                                      fit: BoxFit.cover,
-                                      image: AssetImage('assets/images/ac.png'),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                const Text("Cassette AC",
-                                    style: TextStyle(
-                                        color: Colors.black54,
-                                        fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                          ],
                         ),
                         SizedBox(height: deviceHeight * 0.02),
 
                         const Text(
                           "Enter your service price and discount",
                           style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54),
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black54,
+                          ),
                         ),
                         SizedBox(height: deviceHeight * 0.01),
 
                         // Dynamic Cards from JSON
                         Column(
-                          children: serviceList.map((item) {
-                            return serviceCard(item["title"], item["image"]);
+                          children: serviceDetails.map((item) {
+                            return serviceCard(item["title"], item["service_image"]);
                           }).toList(),
                         ),
                       ],
@@ -266,18 +372,22 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 8,
-                          offset: Offset(0, -2))
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(0, -2),
+                      ),
                     ],
-                    borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -285,7 +395,9 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                       // Top Row with Grey Border
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(10),
@@ -298,16 +410,20 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  widget.categoryName["categoryName"]["category"]!??"",
+                                  widget.categoryName["categoryName"]["category"]! ??
+                                      "",
                                   style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   "${widget.planType} (20 Jobs)",
                                   style: const TextStyle(
-                                      fontSize: 12, color: Colors.black54),
+                                    fontSize: 12,
+                                    color: Colors.black54,
+                                  ),
                                 ),
                               ],
                             ),
@@ -316,8 +432,10 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                             Row(
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.black54),
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.black54,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       isPackageSelected = false;
@@ -327,8 +445,9 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                 const Text(
                                   "₹999",
                                   style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),
@@ -344,7 +463,9 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                           Text(
                             "1 Plan Added",
                             style: TextStyle(
-                                fontWeight: FontWeight.w500, fontSize: 14),
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
                           ),
                           Icon(Icons.keyboard_arrow_down, color: Colors.orange),
                         ],
@@ -360,7 +481,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: Colors.green),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                               child: const Text(
                                 "Add More",
@@ -375,13 +497,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                 Navigator.pushNamed(
                                   context,
                                   Config.planSummaryRouteName,
-
                                 );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                               child: const Text(
                                 "View Summary",
@@ -414,8 +536,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              imageUrl,
+            child: Image.network(
+              "https://admin.gobuddyindia.com//assets//images//$imageUrl",
               height: deviceHeight * 0.08,
               width: deviceWidth * 0.2,
               fit: BoxFit.cover,
@@ -426,9 +548,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
@@ -438,13 +564,16 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                           hintText: "price",
                           prefixText: "₹ ",
                           hintStyle: const TextStyle(
-                              fontSize: 13, color: Colors.grey),
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
                           isDense: true,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                          ),
                         ),
                         keyboardType: TextInputType.number,
                       ),
@@ -456,13 +585,16 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                           hintText: "Discount",
                           prefixText: "% ",
                           hintStyle: const TextStyle(
-                              fontSize: 13, color: Colors.grey),
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
                           isDense: true,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                          ),
                         ),
                         keyboardType: TextInputType.number,
                       ),
@@ -473,11 +605,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                 const Text(
                   "Total  ₹0.00",
                   style: TextStyle(
-                      color: Colors.black87, fontWeight: FontWeight.w600),
-                )
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -502,12 +636,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                   const Text(
                     "Select Jobs Package",
                     style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  ...List.generate(jobPackages.length, (index) {
+                  ...List.generate(packages.length, (index) {
                     return Column(
                       children: [
                         RadioListTile<int>(
@@ -519,7 +654,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                             });
                           },
                           title: Text(
-                              "${jobPackages[index]["jobs"]} Jobs / ₹ ${jobPackages[index]["price"]}"),
+                            "${packages[index]["jobs"]} Jobs / ₹ ${packages[index]["amount"]}",
+                          ),
                         ),
                         const Divider(),
                       ],
@@ -529,11 +665,11 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                   ElevatedButton(
                     onPressed: selectedPackage != null
                         ? () {
-                      setState(() {
-                        isPackageSelected = true;
-                      });
-                      Navigator.pop(context);
-                    }
+                            setState(() {
+                              isPackageSelected = true;
+                            });
+                            Navigator.pop(context);
+                          }
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: selectedPackage != null
@@ -541,14 +677,16 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                           : Colors.grey.shade300,
                       minimumSize: const Size(double.infinity, 45),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: Text(
                       "Proceed",
                       style: TextStyle(
-                          color: selectedPackage != null
-                              ? Colors.white
-                              : Colors.black54),
+                        color: selectedPackage != null
+                            ? Colors.white
+                            : Colors.black54,
+                      ),
                     ),
                   ),
                 ],

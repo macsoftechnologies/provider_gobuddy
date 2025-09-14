@@ -1,4 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/config.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 import '../../../../components/coupon_applied_alert.dart';
 import '../../../paymentGateway/payment_screen.dart';
@@ -31,6 +38,59 @@ class _SummaryScreenState extends State<SummaryScreen> {
       "price": 799,
     },
   ];
+
+
+  void summaryDataAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.packagesApi, {
+         "sub_category_id": "27",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            packages = parsed["package"];
+
+            setState(() {
+              packages = parsed["package"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+ List<dynamic> packages = [];
+  dynamic summaryData = {};
+   @override
+  void initState() {
+    super.initState();
+
+    var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
+      summaryData = json.decode(userDataValue);
+    }
+
+  
+    summaryDataAPI();
+  }
+
 
   int get totalPrice {
     int total = 0;

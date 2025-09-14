@@ -227,7 +227,7 @@ class _AcTechnicianScreenState extends State<AcTechnicianScreen> {
                         SizedBox(height: deviceHeight * 0.02),
 
                         const Text(
-                          "Enter your service price and discount",
+                          "Enter your service price and discount1",
                           style: TextStyle(
                               fontWeight: FontWeight.w500,
                               color: Colors.black54),
