@@ -250,30 +250,30 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Row(
-                            //   children: [
-                            //     Container(
-                            //       padding: const EdgeInsets.symmetric(
-                            //           horizontal: 12, vertical: 6),
-                            //       decoration: BoxDecoration(
-                            //         color: Colors.orange,
-                            //         borderRadius: BorderRadius.circular(20),
-                            //       ),
-                            //       child: const Text(
-                            //         "₹999",
-                            //         style: TextStyle(
-                            //             color: Colors.white,
-                            //             fontWeight: FontWeight.bold),
-                            //       ),
-                            //     ),
-                            //     const SizedBox(width: 10),
-                            //     const Text("20 Jobs",
-                            //         style: TextStyle(
-                            //             fontSize: 15,
-                            //             fontWeight: FontWeight.w500)),
-                            //     const Icon(Icons.keyboard_arrow_down),
-                            //   ],
-                            // ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Text(
+                                    "₹999",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text("20 Jobs",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                const Icon(Icons.keyboard_arrow_down),
+                              ],
+                            ),
                             GestureDetector(
                               onTap: () {
                                 _showJobPackageBottomSheet();
