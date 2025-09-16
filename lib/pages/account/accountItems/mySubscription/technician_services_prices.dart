@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
@@ -26,6 +27,7 @@ class TechnicianServicesPrices extends StatefulWidget {
 class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   double deviceHeight = 0;
   double deviceWidth = 0;
+  int subCatIndex = 0;
 
   bool isPackageSelected = false; // for Add button state
   int? selectedPackage; // selected package index
@@ -39,8 +41,10 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   List<dynamic> subcatDetails = [];
   List<dynamic> serviceDetails = [];
   List<dynamic> packages = [];
-  dynamic userData = {};
 
+  dynamic userData = {};
+  
+  dynamic selectedPack = {};
   void callgetPlansAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
@@ -55,6 +59,11 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
             packages = parsed["package"];
+            
+
+             setState(() {
+              selectedPack = parsed["package"][0];
+            });
 
             setState(() {
               packages = parsed["package"];
@@ -78,41 +87,45 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     }
   }
 
-  void callgetServicesAPI(String id) async {
-    var internet = await UtilClass.checkInternet();
-    if (internet) {
-      // ignore: use_build_context_synchronously
-      UtilClass.showProgress(context: context);
-      await Repository.postApiService(EndPoints.servicesApi, {
-        "sub_category_id": id,
-      }).then((value) async {
-        UtilClass.hideProgress();
-        dynamic parsed = {};
-        try {
-          parsed = await json.decode(value);
-          if (parsed["status"] == "valid") {
-            serviceDetails = parsed["services"];
+  void callgetServicesAPI(int id) async {
+    setState(() {
+      serviceDetails = subcatDetails[id]["services"];
+    });
 
-            setState(() {
-              serviceDetails = parsed["services"];
-            });
-          } else {
-            // ignore: use_build_context_synchronously
-            UtilClass.showAlertDialog(
-              // ignore: use_build_context_synchronously
-              context: context,
-              message: parsed["message"],
-            );
-          }
-        } catch (e) {
-          print(e);
-        }
-        print(parsed["message"]);
-      });
-    } else {
-      // ignore: use_build_context_synchronously
-      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
-    }
+    // var internet = await UtilClass.checkInternet();
+    // if (internet) {
+    //   // ignore: use_build_context_synchronously
+    //   UtilClass.showProgress(context: context);
+    //   await Repository.postApiService(EndPoints.servicesApi, {
+    //     "sub_category_id": id,
+    //   }).then((value) async {
+    //     UtilClass.hideProgress();
+    //     dynamic parsed = {};
+    //     try {
+    //       parsed = await json.decode(value);
+    //       if (parsed["status"] == "valid") {
+    //         serviceDetails = parsed["services"];
+
+    //         setState(() {
+    //           serviceDetails = parsed["services"];
+    //         });
+    //       } else {
+    //         // ignore: use_build_context_synchronously
+    //         UtilClass.showAlertDialog(
+    //           // ignore: use_build_context_synchronously
+    //           context: context,
+    //           message: parsed["message"],
+    //         );
+    //       }
+    //     } catch (e) {
+    //       print(e);
+    //     }
+    //     print(parsed["message"]);
+    //   });
+    // } else {
+    //   // ignore: use_build_context_synchronously
+    //   UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    // }
   }
 
   void callgetSubCatAPI() async {
@@ -128,13 +141,34 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
         try {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
-            subcatDetails = parsed["sub_category"];
+            // subcatDetails = parsed["sub_category"];
+            for (int i = 0; i < parsed["sub_category"].length; i++) {
+              var services = parsed["sub_category"][i]["services"];
+              for (int j = 0; j < parsed["sub_category"].length; j++) {
+                try {
+                  services[j]["tprice"] = "";
+                  services[j]["tdiscount"] = "";
+                  services[j]["ttotal"] = "0.00";
+                  services[j]["acontroller"] = TextEditingController(text: '');
+                  services[j]["dcontroller"] = TextEditingController(text: '');
+                } catch (err) {}
+
+                // Set the boolean value
+              }
+              parsed["sub_category"][i]["services"] = services;
+            }
 
             setState(() {
               subcatDetails = parsed["sub_category"];
             });
 
-            callgetServicesAPI(subcatDetails[0]["id"]);
+            // callgetServicesAPI(subcatDetails[0]["id"]);
+
+            // serviceDetails = subcatDetails[0]["services"];
+
+            setState(() {
+              serviceDetails = subcatDetails[0]["services"];
+            });
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -250,33 +284,47 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
+                            GestureDetector(
+                              onTap: () {
+                                _showJobPackageBottomSheet();
+                              },child:Row(
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.orange,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: const Text(
-                                    "₹999",
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
+                                  child: Text(
+                                   selectedPack["amount"] ?? "" ,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-                                const Text("20 Jobs",
-                                    style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
+                                Text(
+                                  selectedPack["jobs"] ?? "",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                                 const Icon(Icons.keyboard_arrow_down),
                               ],
-                            ),
+                            )),
                             GestureDetector(
                               onTap: () {
-                                _showJobPackageBottomSheet();
+                                // _showJobPackageBottomSheet();
+
+                                Navigator.pushNamed(
+                                  context,
+                                  Config.planSummaryRouteName,
+                                );
                               },
                               child: isPackageSelected
                                   ? Row(
@@ -323,44 +371,51 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         // AC Type Selection
                         SizedBox(
                           height:
-                              deviceHeight * 0.15, // Set a fixed height for the horizontal list
+                              deviceHeight *
+                              0.15, // Set a fixed height for the horizontal list
                           child: ListView.builder(
                             scrollDirection: Axis
                                 .horizontal, // Important: Set scroll direction to horizontal
-                            itemCount: subcatDetails.length, // Number of items in the list
+                            itemCount: subcatDetails
+                                .length, // Number of items in the list
                             itemBuilder: (context, index) {
-                              return  GestureDetector(
-                                    onTap: () {
-                                    callgetServicesAPI( subcatDetails[index]["id"]);
-
-
-                                    },
-                                    child: Container(
-                                width: deviceHeight * 0.15, // Width of each item
-                                margin: const EdgeInsets.all(1.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.blueGrey[100],
-                                  borderRadius: BorderRadius.circular(2.0),
+                              return GestureDetector(
+                                onTap: () {
+                                  subCatIndex = index;
+                                  callgetServicesAPI(index);
+                                },
+                                child: Container(
+                                  width:
+                                      deviceHeight * 0.15, // Width of each item
+                                  margin: const EdgeInsets.all(1.0),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueGrey[100],
+                                    borderRadius: BorderRadius.circular(2.0),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Replace with your actual image asset or network image
+                                      Image.network(
+                                        // ignore: prefer_interpolation_to_compose_strings
+                                        "https://admin.gobuddyindia.com//assets//images//" +
+                                            subcatDetails[index]["sub_image"], // Example image path
+                                        height: deviceHeight * 0.1,
+                                        width: deviceHeight * 0.11,
+                                        fit: BoxFit.cover,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        subcatDetails[index]["sub_category"],
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // Replace with your actual image asset or network image
-                                    Image.network(
-                                      // ignore: prefer_interpolation_to_compose_strings
-                                      "https://admin.gobuddyindia.com//assets//images//" + subcatDetails[index]["sub_image"], // Example image path
-                                      height: deviceHeight * 0.1,
-                                      width: deviceHeight * 0.11,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      subcatDetails[index]["sub_category"],
-                                      style: const TextStyle(fontSize: 10,color: Colors.green,),
-                                    ),
-                                  ],
-                                ),
-                              ));
+                              );
                             },
                           ),
                         ),
@@ -378,10 +433,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
 
                         // Dynamic Cards from JSON
                         Column(
-                          children: serviceDetails.map((item) {
+                          children: serviceDetails.asMap().entries.map((entry) {
+                            int index = entry.key;
+                            dynamic item = entry.value;
                             return serviceCard(
                               item["title"],
                               item["service_image"],
+                              index,
                             );
                           }).toList(),
                         ),
@@ -550,7 +608,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     );
   }
 
-  Widget serviceCard(String title, String imageUrl) {
+  Widget serviceCard(String title, String imageUrl, int? index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(10),
@@ -587,6 +645,53 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                   children: [
                     Expanded(
                       child: TextField(
+                        controller:
+                            subcatDetails[subCatIndex]["services"][index]["acontroller"],
+                        onChanged: (value) {
+                          var data =
+                              subcatDetails[subCatIndex]["services"][index];
+
+                          subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                  .text =
+                              value;
+
+                          double totalvalue = 0;
+                          try {
+                            var amount =
+                                int.parse(subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                    .text);
+                           var discount = 0;
+                            try{
+ discount =
+                                int.parse(subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                    .text);
+                            } catch(err){
+discount = 0;
+                            }       
+                            
+
+                            totalvalue = amount - (amount * discount) / 100;
+                          } catch (err) {
+                            totalvalue = 0;
+                          }
+                          setState(() {
+                            subcatDetails[subCatIndex]["services"][index]["ttotal"] =
+                                totalvalue.toString();
+
+                            // You can also update other properties of the object here
+                          });
+
+                          // subcatDetails[subCatIndex]["services"][index]["tprice"] = value;
+                          // Perform actions with the updated 'value'
+                          print('Text changed: $value');
+                        },
+                        keyboardType: TextInputType.number,
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d+\.?\d{0,2}'),
+                          ), // Example: Allows digits and up to 2 decimal places
+                        ],
+
                         decoration: InputDecoration(
                           hintText: "price",
                           prefixText: "₹ ",
@@ -602,12 +707,51 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                             horizontal: 8,
                           ),
                         ),
-                        keyboardType: TextInputType.number,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: TextField(
+                        controller:
+                            subcatDetails[subCatIndex]["services"][index]["dcontroller"],
+                        onChanged: (value) {
+                          var data =
+                              subcatDetails[subCatIndex]["services"][index];
+
+                          subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                  .text =
+                              value;
+
+                          double totalvalue = 0;
+                          try {
+                            var amount =
+                                int.parse(subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                    .text);
+                            var discount = 0;
+                            try{
+ discount =
+                                int.parse(subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                    .text);
+                            } catch(err){
+discount = 0;
+                            }  
+
+                            totalvalue = amount - (amount * discount) / 100 ;
+                          } catch (err) {
+                            totalvalue = 0;
+                          }
+
+                          setState(() {
+                            subcatDetails[subCatIndex]["services"][index]["ttotal"] =
+                                totalvalue.toString();
+
+                            // You can also update other properties of the object here
+                          });
+
+                          // subcatDetails[subCatIndex]["services"][index]["tprice"] = value;
+                          // Perform actions with the updated 'value'
+                          print('Text changed: $value');
+                        },
                         decoration: InputDecoration(
                           hintText: "Discount",
                           prefixText: "% ",
@@ -629,9 +773,11 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  "Total  ₹0.00",
-                  style: TextStyle(
+                Text(
+                  // ignore: prefer_interpolation_to_compose_strings
+                  "Total  ₹ " +
+                      subcatDetails[subCatIndex]["services"][index]["ttotal"],
+                  style: const TextStyle(
                     color: Colors.black87,
                     fontWeight: FontWeight.w600,
                   ),
@@ -675,10 +821,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         RadioListTile<int>(
                           value: index,
                           groupValue: selectedPackage,
-                          onChanged: (val) {
+                          onChanged: (dynamic val) {
                             setModalState(() {
                               selectedPackage = val;
                             });
+                             setState(() {
+                     selectedPack = packages[val];
+            });
                           },
                           title: Text(
                             "${packages[index]["jobs"]} Jobs / ₹ ${packages[index]["amount"]}",
@@ -692,9 +841,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                   ElevatedButton(
                     onPressed: selectedPackage != null
                         ? () {
-                            setState(() {
-                              isPackageSelected = true;
-                            });
+                            // setState(() {
+                            //   isPackageSelected = true;
+                            // });
+
+            //                   setState(() {
+            //   selectedPack = selectedPackage;
+            // });
                             Navigator.pop(context);
                           }
                         : null,
@@ -708,7 +861,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                       ),
                     ),
                     child: Text(
-                      "Proceed",
+                      "Cancel",
                       style: TextStyle(
                         color: selectedPackage != null
                             ? Colors.white
