@@ -28,7 +28,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   double deviceHeight = 0;
   double deviceWidth = 0;
   int subCatIndex = 0;
-
+  dynamic subCat = "";
   bool isPackageSelected = false; // for Add button state
   int? selectedPackage; // selected package index
 
@@ -43,8 +43,52 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   List<dynamic> packages = [];
 
   dynamic userData = {};
-  
+
   dynamic selectedPack = {};
+
+
+  void callAddsubscriptionAPI(dynamic data) async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiServiceWithJson(EndPoints.addprovSubscriptionApi, data).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+
+             UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+
+            Navigator.pushNamed(
+                                  context,
+                                  Config.planSummaryRouteName,
+                                );
+          
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
   void callgetPlansAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
@@ -59,9 +103,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
             packages = parsed["package"];
-            
 
-             setState(() {
+            setState(() {
               selectedPack = parsed["package"][0];
             });
 
@@ -165,7 +208,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
             // callgetServicesAPI(subcatDetails[0]["id"]);
 
             // serviceDetails = subcatDetails[0]["services"];
-
+            subCat = subcatDetails[0]["id"];
             setState(() {
               serviceDetails = subcatDetails[0]["services"];
             });
@@ -287,44 +330,94 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                             GestureDetector(
                               onTap: () {
                                 _showJobPackageBottomSheet();
-                              },child:Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                   selectedPack["amount"] ?? "" ,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                              },
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      selectedPack["amount"] ?? "",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  selectedPack["jobs"] ?? "",
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    selectedPack["jobs"] ?? "",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                const Icon(Icons.keyboard_arrow_down),
-                              ],
-                            )),
+                                  const Icon(Icons.keyboard_arrow_down),
+                                ],
+                              ),
+                            ),
                             GestureDetector(
                               onTap: () {
                                 // _showJobPackageBottomSheet();
+                                List<dynamic> servicesData = [];
+                                List<dynamic> copiedList = [...subcatDetails];
+                                for (int i = 0; i < copiedList.length; i++) {
+                                  var services = copiedList[i]["services"];
+                                  for (int j = 0; j < services.length; j++) {
+                                    try {
+                                      var amount =
+                                          services[j]["acontroller"].text;
+                                      var discount =
+                                          services[j]["dcontroller"].text;
 
-                                Navigator.pushNamed(
-                                  context,
-                                  Config.planSummaryRouteName,
-                                );
+                                      if (amount.length > 0) {
+                                        servicesData.add({
+                                          "service_id": services[j]["sid"],
+                                          "price": amount,
+                                          "discount": discount,
+                                        });
+                                      }
+                                      // services[j]["tprice"] = "";
+                                      // services[j]["tdiscount"] = "";
+                                      // services[j]["ttotal"] = "0.00";
+                                      // services[j]["acontroller"] =
+                                      //     TextEditingController(text: '');
+                                      // services[j]["dcontroller"] =
+                                      //     TextEditingController(text: '');
+                                    } catch (err) {}
+
+                                    // Set the boolean value
+                                  }
+                                }
+
+                                print(servicesData);
+                                
+
+                                var data = {
+                                  "provider_id": userData["user_id"],
+                                  "category_id":
+                                      widget.categoryName["categoryName"]["id"],
+                                  "sub_category_id": subCat,
+                                  "subscription": widget.planType,
+                                  "jobs": selectedPack["jobs"],
+                                  "package": selectedPack["amount"],
+                                  "services": servicesData,
+                                };
+                                print(data);
+
+
+                                
+
+                                callAddsubscriptionAPI(data);
+
+                                print("cesData");
+                                
                               },
                               child: isPackageSelected
                                   ? Row(
@@ -381,6 +474,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                             itemBuilder: (context, index) {
                               return GestureDetector(
                                 onTap: () {
+                                  subCat = subcatDetails[index]["id"];
                                   subCatIndex = index;
                                   callgetServicesAPI(index);
                                 },
@@ -657,18 +751,19 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
 
                           double totalvalue = 0;
                           try {
-                            var amount =
-                                int.parse(subcatDetails[subCatIndex]["services"][index]["acontroller"]
-                                    .text);
-                           var discount = 0;
-                            try{
- discount =
-                                int.parse(subcatDetails[subCatIndex]["services"][index]["dcontroller"]
-                                    .text);
-                            } catch(err){
-discount = 0;
-                            }       
-                            
+                            var amount = int.parse(
+                              subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                  .text,
+                            );
+                            var discount = 0;
+                            try {
+                              discount = int.parse(
+                                subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                    .text,
+                              );
+                            } catch (err) {
+                              discount = 0;
+                            }
 
                             totalvalue = amount - (amount * discount) / 100;
                           } catch (err) {
@@ -724,19 +819,21 @@ discount = 0;
 
                           double totalvalue = 0;
                           try {
-                            var amount =
-                                int.parse(subcatDetails[subCatIndex]["services"][index]["acontroller"]
-                                    .text);
+                            var amount = int.parse(
+                              subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                  .text,
+                            );
                             var discount = 0;
-                            try{
- discount =
-                                int.parse(subcatDetails[subCatIndex]["services"][index]["dcontroller"]
-                                    .text);
-                            } catch(err){
-discount = 0;
-                            }  
+                            try {
+                              discount = int.parse(
+                                subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                    .text,
+                              );
+                            } catch (err) {
+                              discount = 0;
+                            }
 
-                            totalvalue = amount - (amount * discount) / 100 ;
+                            totalvalue = amount - (amount * discount) / 100;
                           } catch (err) {
                             totalvalue = 0;
                           }
@@ -825,9 +922,9 @@ discount = 0;
                             setModalState(() {
                               selectedPackage = val;
                             });
-                             setState(() {
-                     selectedPack = packages[val];
-            });
+                            setState(() {
+                              selectedPack = packages[val];
+                            });
                           },
                           title: Text(
                             "${packages[index]["jobs"]} Jobs / ₹ ${packages[index]["amount"]}",
@@ -845,9 +942,9 @@ discount = 0;
                             //   isPackageSelected = true;
                             // });
 
-            //                   setState(() {
-            //   selectedPack = selectedPackage;
-            // });
+                            //                   setState(() {
+                            //   selectedPack = selectedPackage;
+                            // });
                             Navigator.pop(context);
                           }
                         : null,

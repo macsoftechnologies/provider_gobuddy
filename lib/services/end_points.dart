@@ -17,5 +17,8 @@ class EndPoints {
   static const String servicesApi =  "${newbaseUrl}services";
   
     static const String packagesApi =  "${newbaseUrl}getjobspackage";
+     static const String addprovSubscriptionApi =  "${newbaseUrl}add_provider_subscription";
+
+    static const String getprovSubscriptionApi =  "${newbaseUrl}get_provider_subscription";
   
 }

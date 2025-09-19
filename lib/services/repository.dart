@@ -59,6 +59,28 @@ class Repository {
       }
     }
   }
+  // ignore: non_constant_identifier_names
+  static Future<dynamic> postApiServiceWithJson(dynamic endpoint, dynamic inputData) async {
+    
+    try {
+      Response response = await dio.post(
+        endpoint, // Replace with your API endpoint
+        data: inputData,
+      );
+      print('Response: ${response.data}');
+
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        print('Error response data: ${e.response!.data}');
+        print('Error response headers: ${e.response!.headers}');
+        return e;
+      } else {
+        print('Error sending request: $e');
+        return e;
+      }
+    }
+  }
 
   static Future<dynamic> postimagesApiService(dynamic endpoint, dynamic formData) async {
   

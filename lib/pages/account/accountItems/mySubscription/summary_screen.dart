@@ -27,37 +27,37 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
   // List of plans (Dynamic)
   List<Map<String, dynamic>> plans = [
-    {
-      "title": "AC Technician",
-      "subtitle": "Basic Plan ( 20 Jobs )",
-      "price": 999,
-    },
-    {
-      "title": "Electrician",
-      "subtitle": "Basic Plan ( 20 Jobs )",
-      "price": 799,
-    },
-  ];
+];
 
+  List<dynamic> subDetails = [];
 
   void summaryDataAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
-      await Repository.postApiService(EndPoints.packagesApi, {
-         "sub_category_id": "27",
+      await Repository.postApiService(EndPoints.getprovSubscriptionApi, {
+        "provider_id": userData["user_id"] ?? "4361",
       }).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = {};
         try {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
-            packages = parsed["package"];
+
 
             setState(() {
-              packages = parsed["package"];
+              plans = [
+   parsed["data"]
+  ];
+
             });
+            //   plans = parsed["data"];
+            // setState(() {
+            //   plans = parsed["data"];
+            // });
+
+            // print(plans);
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -76,27 +76,41 @@ class _SummaryScreenState extends State<SummaryScreen> {
       UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
     }
   }
- List<dynamic> packages = [];
+
+  List<dynamic> packages = [];
   dynamic summaryData = {};
-   @override
+  dynamic userData = {};
+
+
+
+  @override
   void initState() {
     super.initState();
 
     var userDataValue = Preferences.getUserDetails();
     if (userDataValue != null) {
-      summaryData = json.decode(userDataValue);
+      userData = json.decode(userDataValue);
     }
 
-  
+  //    setState(() {
+  //             plans =  [
+  //   {
+  //     "title": "AC Technician",
+  //     "subtitle": "Basic Plan ( 20 Jobs )",
+  //     "price": 999,
+  //   },
+    
+  // ];
+  //           });
+
     summaryDataAPI();
   }
 
-
   int get totalPrice {
     int total = 0;
-    for (var plan in plans) {
-      total += plan["price"] as int;
-    }
+    // for (var plan in plans) {
+    //   total += plan["price"] as int;
+    // }
     return total;
   }
 
@@ -161,16 +175,20 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           color: const Color(0xFF65B741),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.arrow_back, color: Colors.white),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     SizedBox(width: deviceWidth * 0.04),
                     const Text(
                       "Summary",
                       style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                     ),
                   ],
                 ),
@@ -195,7 +213,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             color: Colors.black.withOpacity(0.05),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
-                          )
+                          ),
                         ],
                       ),
                       child: Row(
@@ -206,16 +224,19 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                plan["title"],
+                                plan["category"],
                                 style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                ),
                               ),
                               Text(
-                                plan["subtitle"],
+                                plan["subscription"],
                                 style: const TextStyle(
-                                    fontSize: 14, color: Colors.grey),
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
@@ -224,18 +245,21 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             children: [
                               IconButton(
                                 onPressed: () => removePlan(index),
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.grey),
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.grey,
+                                ),
                               ),
                               Text(
-                                "₹${plan["price"]}",
+                                "₹${plan["package"]}",
                                 style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                ),
                               ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                     );
@@ -268,10 +292,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                         Text(
                           "Add More Plans",
                           style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500),
-                        )
+                            color: Colors.green,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -281,16 +306,19 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
                 // Coupon Section
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2))
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
                   ),
                   child: Column(
@@ -303,9 +331,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           Text(
                             "Offers",
                             style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ),
@@ -327,7 +356,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                   borderSide: BorderSide.none,
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 12),
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
                               ),
                               enabled: !_isCouponApplied,
                             ),
@@ -337,7 +368,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             onTap: _isCouponApplied ? null : _applyCoupon,
                             child: Container(
                               height: 45,
-                              padding: const EdgeInsets.symmetric(horizontal: 18),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                              ),
                               decoration: BoxDecoration(
                                 color: _isCouponApplied ? Colors.green : null,
                                 border: Border.all(
@@ -350,32 +383,37 @@ class _SummaryScreenState extends State<SummaryScreen> {
                               child: Center(
                                 child: _isCouponApplied
                                     ? const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.check,
-                                        color: Colors.white, size: 20),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      "Applied",
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                )
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            "Applied",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      )
                                     : const Text(
-                                  "Apply",
-                                  style: TextStyle(
-                                      color: Colors.green,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500),
-                                ),
+                                        "Apply",
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                               ),
                             ),
-                          )
+                          ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -385,16 +423,19 @@ class _SummaryScreenState extends State<SummaryScreen> {
                 // To Pay Section
                 Container(
                   width: double.infinity,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2))
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
                   ),
                   child: Column(
@@ -405,14 +446,17 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           const Text(
                             "Total",
                             style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.grey),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.grey,
+                            ),
                           ),
                           Text(
                             "₹$totalPrice",
                             style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w500),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -423,16 +467,18 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           const Text(
                             "To Pay",
                             style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
                           ),
                           Text(
                             "₹$totalPrice",
                             style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
                           ),
                         ],
                       ),
@@ -465,12 +511,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
                               fontWeight: FontWeight.w400,
                               color: Colors.grey,
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
                     GestureDetector(
-                      onTap: (){
+                      onTap: () {
                         // Navigator.push(
                         //   context,
                         //   MaterialPageRoute(builder: (context) => PaymentMethodScreen(amount: totalPrice.toDouble(), fromScreen: 'subscription',)),
@@ -494,9 +540,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           ),
                         ),
                       ),
-                    )
+                    ),
                   ],
-                )
+                ),
               ],
             ),
           ),
