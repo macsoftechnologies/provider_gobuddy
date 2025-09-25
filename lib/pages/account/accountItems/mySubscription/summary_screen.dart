@@ -26,7 +26,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
   String _appliedCoupon = '';
 
   // List of plans (Dynamic)
-  List<Map<String, dynamic>> plans = [
+  List<dynamic> plans = [
 ];
 
   List<dynamic> subDetails = [];

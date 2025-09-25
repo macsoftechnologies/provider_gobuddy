@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -24,6 +25,9 @@ class TechnicianServicesPrices extends StatefulWidget {
       _TechnicianServicesPricesState();
 }
 
+typedef MenuEntry = DropdownMenuEntry<String>;
+const List<String> list = ['%', '₹'];
+
 class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   double deviceHeight = 0;
   double deviceWidth = 0;
@@ -38,6 +42,12 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     {"jobs": 40, "price": 1499},
     {"jobs": 60, "price": 2399},
   ];
+
+  static final List<MenuEntry> menuEntries = UnmodifiableListView<MenuEntry>(
+    list.map<MenuEntry>((String name) => MenuEntry(value: name, label: name)),
+  );
+  String dropdownValue = list.first;
+
   List<dynamic> subcatDetails = [];
   List<dynamic> serviceDetails = [];
   List<dynamic> packages = [];
@@ -46,30 +56,27 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
 
   dynamic selectedPack = {};
 
-
   void callAddsubscriptionAPI(dynamic data) async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
-      await Repository.postApiServiceWithJson(EndPoints.addprovSubscriptionApi, data).then((value) async {
+      await Repository.postApiServiceWithJson(
+        EndPoints.addprovSubscriptionApi,
+        data,
+      ).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = {};
         try {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
-
-             UtilClass.showAlertDialog(
+            UtilClass.showAlertDialog(
               // ignore: use_build_context_synchronously
               context: context,
               message: parsed["message"],
             );
 
-            Navigator.pushNamed(
-                                  context,
-                                  Config.planSummaryRouteName,
-                                );
-          
+            Navigator.pushNamed(context, Config.planSummaryRouteName);
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -194,6 +201,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                   services[j]["ttotal"] = "0.00";
                   services[j]["acontroller"] = TextEditingController(text: '');
                   services[j]["dcontroller"] = TextEditingController(text: '');
+                   services[j]["menuselect"] = list.first;
+                   services[j]["menuselectVal"] = "%";
                 } catch (err) {}
 
                 // Set the boolean value
@@ -397,27 +406,31 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                 }
 
                                 print(servicesData);
-                                
 
-                                var data = {
-                                  "provider_id": userData["user_id"],
-                                  "category_id":
-                                      widget.categoryName["categoryName"]["id"],
-                                  "sub_category_id": subCat,
-                                  "subscription": widget.planType,
-                                  "jobs": selectedPack["jobs"],
-                                  "package": selectedPack["amount"],
-                                  "services": servicesData,
-                                };
-                                print(data);
+                                if (servicesData.length > 0) {
+                                  var data = {
+                                    "provider_id": userData["user_id"],
+                                    "category_id": widget
+                                        .categoryName["categoryName"]["id"],
+                                    "sub_category_id": subCat,
+                                    "subscription": widget.planType,
+                                    "jobs": selectedPack["jobs"],
+                                    "package": selectedPack["amount"],
+                                    "services": servicesData,
+                                  };
+                                  print(data);
 
-
-                                
-
-                                callAddsubscriptionAPI(data);
+                                  callAddsubscriptionAPI(data);
+                                } else {
+                                  UtilClass.showAlertDialog(
+                                    // ignore: use_build_context_synchronously
+                                    context: context,
+                                    message:
+                                        "please add any one of the service",
+                                  );
+                                }
 
                                 print("cesData");
-                                
                               },
                               child: isPackageSelected
                                   ? Row(
@@ -749,7 +762,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                   .text =
                               value;
 
-                          double totalvalue = 0;
+                          double? totalvalue = 0;
                           try {
                             var amount = int.parse(
                               subcatDetails[subCatIndex]["services"][index]["acontroller"]
@@ -764,8 +777,9 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                             } catch (err) {
                               discount = 0;
                             }
-
-                            totalvalue = amount - (amount * discount) / 100;
+                            
+ var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                            totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
                           } catch (err) {
                             totalvalue = 0;
                           }
@@ -805,6 +819,88 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                       ),
                     ),
                     const SizedBox(width: 6),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                   SizedBox(height: 50.0, child: DropdownMenu<String>(
+                    inputDecorationTheme: const InputDecorationTheme(
+                        contentPadding: EdgeInsets.all(10),
+                        constraints: BoxConstraints.expand(height: 40),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(10),
+                          ),
+                          borderSide: BorderSide(
+                            width: 1.2,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      initialSelection:subcatDetails[subCatIndex]["services"][index]["menuselect"],
+                      onSelected: (String? value) {
+                        // This is called when the user                    selects an item.
+                        setState(() {
+                          subcatDetails[subCatIndex]["services"][index]["menuselectVal"] =  value;
+                          dropdownValue = value!;
+                        });
+
+                        var data =
+                              subcatDetails[subCatIndex]["services"][index];
+
+                          // subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                          //         .text =
+                          //     value;
+
+                          double totalvalue = 0;
+                          try {
+                            var amount = int.parse(
+                              subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                  .text,
+                            );
+                            var discount = 0;
+                            try {
+                              discount = int.parse(
+                                subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                    .text,
+                              );
+                            } catch (err) {
+                              discount = 0;
+                            }
+
+                             var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                            totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
+                          } catch (err) {
+                            totalvalue = 0;
+                          }
+
+                          setState(() {
+                            subcatDetails[subCatIndex]["services"][index]["ttotal"] =
+                                totalvalue.toString();
+
+                            // You can also update other properties of the object here
+                          });
+
+
+//////
+///
+///
+///
+///
+///
+
+
+
+
+
+
+
+                      },
+                      dropdownMenuEntries: menuEntries,
+                    )),
+                    const SizedBox(width: 6),
+
                     Expanded(
                       child: TextField(
                         controller:
@@ -833,7 +929,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                               discount = 0;
                             }
 
-                            totalvalue = amount - (amount * discount) / 100;
+                             var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                            totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
                           } catch (err) {
                             totalvalue = 0;
                           }
@@ -851,7 +948,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         },
                         decoration: InputDecoration(
                           hintText: "Discount",
-                          prefixText: "% ",
+                        
                           hintStyle: const TextStyle(
                             fontSize: 13,
                             color: Colors.grey,
@@ -869,6 +966,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 6),
                 Text(
                   // ignore: prefer_interpolation_to_compose_strings
