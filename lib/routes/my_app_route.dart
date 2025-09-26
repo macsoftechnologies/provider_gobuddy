@@ -127,7 +127,9 @@ class MyAppRouteState extends State<MyAppRoute> {
           return MaterialPageRoute(
             builder: (_) => TechnicianServicesPrices(
               categoryName: args ,
+               planName: args['planName'] ?? '',
               planType: args['planType'] ?? '',
+              
 
             ),
           );

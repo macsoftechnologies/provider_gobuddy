@@ -25,12 +25,76 @@ class _SummaryScreenState extends State<SummaryScreen> {
   final TextEditingController _couponController = TextEditingController();
   bool _isCouponApplied = false;
   String _appliedCoupon = '';
-
+String _appliedCouponAmount = '0';
   // List of plans (Dynamic)
   List<dynamic> plans = [];
 
   List<dynamic> subDetails = [];
+void CoupounAPIData() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.coupounApi, {
+        "user_id": userData["user_id"]??"4355",
+         "coupon": _couponController.text,
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = await json.decode(value);
+        try {
+        
+          if (parsed["status"] == "valid") {
+         var amount = parsed["coupon_amount"];
+            setState(() {
+        _isCouponApplied = true;
+        _appliedCouponAmount = amount;
+        _appliedCoupon = _couponController.text;
+      });
 
+      
+
+      showDialog(
+        context: context,
+        builder: (_) => ReferralDialog(
+          title: "Offer code applied",
+          subtitle: "₹ $amount savings with this code",
+          image: "assets/images/couponCode.png",
+        ),
+      );
+
+            //   plans = parsed["data"];
+            // setState(() {
+            //   plans = parsed["data"];
+            // });
+
+            // var data =  parsed["data"][0];
+
+            // print(data);
+            //   plans = parsed["data"];
+            // setState(() {
+            //   plans = parsed["data"];
+            // });
+
+            // print(plans);
+          } else {
+           
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
   void summaryDataAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
@@ -105,13 +169,33 @@ class _SummaryScreenState extends State<SummaryScreen> {
     summaryDataAPI();
   }
 
-  int get totalPrice {
-    int total = 0;
-    // for (var plan in plans) {
-    //   total += plan["price"] as int;
-    // }
-    return total;
+  String get totalPrice {
+    double total = 0.0;
+    for (var plan in plans) {
+      var package  = double.parse(plan["package"]);
+      total += package;
+    }
+    return total.toString();
   }
+  String get finalPrice {
+    double total = 0.0;
+    for (var plan in plans) {
+      var package  = double.parse(plan["package"]);
+      total += package;
+    }
+
+    double finalPrice = total - double.parse(_appliedCouponAmount);
+    return finalPrice.toString();
+  }
+    String get DiscountPrice {
+    double total = 0.0;
+    for (var plan in plans) {
+      var package  = double.parse(plan["package"]);
+      total += package;
+    }
+    return total.toString();
+  }
+
 
   void removePlan(int index) {
     setState(() {
@@ -121,19 +205,21 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
   void _applyCoupon() {
     if (_couponController.text.isNotEmpty) {
-      setState(() {
-        _isCouponApplied = true;
-        _appliedCoupon = _couponController.text;
-      });
 
-      showDialog(
-        context: context,
-        builder: (_) => const ReferralDialog(
-          title: "Offer code applied",
-          subtitle: "₹ 100 savings with this code",
-          image: "assets/images/couponCode.png",
-        ),
-      );
+      CoupounAPIData();
+      // setState(() {
+      //   _isCouponApplied = true;
+      //   _appliedCoupon = _couponController.text;
+      // });
+
+      // showDialog(
+      //   context: context,
+      //   builder: (_) => const ReferralDialog(
+      //     title: "Offer code applied",
+      //     subtitle: "₹ 100 savings with this code",
+      //     image: "assets/images/couponCode.png",
+      //   ),
+      // );
 
       // Show success message
       // ScaffoldMessenger.of(context).showSnackBar(
@@ -347,7 +433,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: TextField(
+                            child: !_isCouponApplied?TextField(
                               controller: _couponController,
                               decoration: InputDecoration(
                                 hintText: _isCouponApplied
@@ -365,7 +451,24 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 ),
                               ),
                               enabled: !_isCouponApplied,
-                            ),
+                            ):ActionChip(
+         
+          label: Text(_couponController.text),
+           avatar: Icon(Icons.delete),
+          onPressed: () {
+
+
+      
+_couponController.text = "";
+_appliedCouponAmount = "0";
+             setState(() {
+              _isCouponApplied = false;
+               _appliedCouponAmount = "0";
+              
+            });
+           
+          },
+        ),
                           ),
                           const SizedBox(width: 10),
                           GestureDetector(
@@ -444,7 +547,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   ),
                   child: Column(
                     children: [
-                      Row(
+                      
+                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
@@ -457,6 +561,26 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           ),
                           Text(
                             "₹$totalPrice",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Discount",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          Text(
+                            "- ₹$_appliedCouponAmount",
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -477,7 +601,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             ),
                           ),
                           Text(
-                            "₹$totalPrice",
+                            "₹$finalPrice",
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,

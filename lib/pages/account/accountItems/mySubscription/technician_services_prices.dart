@@ -12,11 +12,13 @@ import '../../../../utils/config.dart';
 
 class TechnicianServicesPrices extends StatefulWidget {
   final dynamic categoryName;
+  final dynamic planName;
   final String planType;
 
   const TechnicianServicesPrices({
     super.key,
     required this.categoryName,
+     required this.planName,
     required this.planType,
   });
 
@@ -250,7 +252,19 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     }
 
     callgetSubCatAPI();
-    callgetPlansAPI();
+
+    var data  = widget.planName;
+
+    print(data);
+
+     setState(() {
+              selectedPack = widget.planName["packages"][0];
+            });
+
+            setState(() {
+              packages = widget.planName["packages"]??[];
+            });
+    // callgetPlansAPI();
   }
 
   // Sample JSON data for service cards
@@ -290,23 +304,33 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                       Positioned(
                         left: 16,
                         top: 16,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const CircleAvatar(
-                            backgroundColor: Colors.white,
-                            child: Icon(Icons.arrow_back, color: Colors.green),
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: Text(
-                          widget.categoryName["categoryName"]["category"]! ??
-                              "",
-                          style: TextStyle(
-                            fontSize: deviceWidth * 0.06,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
+                        right:
+                        16, // Added right constraint to ensure proper spacing
+                        child: Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context);
+                              },
+                              child: _buildBackButton(),
+                            ),
+                            SizedBox(width: deviceWidth * 0.03),
+                            //const SizedBox(width: 16), // Add spacing between icon and text
+                            Expanded(
+                              child: Text(
+                                widget.categoryName["categoryName"]["category"]! ??
+                                    "",
+                                style: TextStyle(
+                                  fontSize: deviceWidth * 0.06,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                                maxLines:
+                                2, // Allow text to wrap to second line if needed
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -476,15 +500,15 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
 
                         // AC Type Selection
                         SizedBox(
-                          height:
-                              deviceHeight *
-                              0.15, // Set a fixed height for the horizontal list
+                          height: deviceHeight * 0.18, // Set a fixed height for the horizontal list
                           child: ListView.builder(
+
                             scrollDirection: Axis
                                 .horizontal, // Important: Set scroll direction to horizontal
                             itemCount: subcatDetails
                                 .length, // Number of items in the list
                             itemBuilder: (context, index) {
+                              final bool isSelected = subCatIndex == index;
                               return GestureDetector(
                                 onTap: () {
                                   subCat = subcatDetails[index]["id"];
@@ -492,32 +516,46 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                   callgetServicesAPI(index);
                                 },
                                 child: Container(
-                                  width:
-                                      deviceHeight * 0.15, // Width of each item
-                                  margin: const EdgeInsets.all(1.0),
+                                  width: deviceHeight * 0.14,
+                                  margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.blueGrey[100],
-                                    borderRadius: BorderRadius.circular(2.0),
+                                    border: Border.all(
+                                      color: isSelected ? Colors.green : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                  child: Column(
+                                  child:  Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      // Replace with your actual image asset or network image
-                                      Image.network(
-                                        // ignore: prefer_interpolation_to_compose_strings
-                                        "https://admin.gobuddyindia.com//assets//images//" +
-                                            subcatDetails[index]["sub_image"], // Example image path
-                                        height: deviceHeight * 0.1,
-                                        width: deviceHeight * 0.11,
-                                        fit: BoxFit.cover,
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Image.network(
+                                          "https://admin.gobuddyindia.com//assets//images//${subcatDetails[index]["sub_image"]}",
+                                          height: deviceHeight * 0.10,
+                                          width: deviceHeight * 0.10,
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: 6),
                                       Text(
                                         subcatDetails[index]["sub_category"],
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.green,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                          color: isSelected ? Colors.green : Colors.black87,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
@@ -526,6 +564,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                             },
                           ),
                         ),
+
 
                         SizedBox(height: deviceHeight * 0.02),
 
@@ -715,6 +754,23 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     );
   }
 
+
+  /// Back Button
+  Widget _buildBackButton() {
+    return Container(
+      height: 40,
+      width: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Icon(
+        Icons.arrow_back_ios_new,
+        color: Colors.black,
+        size: 18,
+      ),
+    );
+  }
   Widget serviceCard(String title, String imageUrl, int? index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -730,7 +786,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
               "https://admin.gobuddyindia.com//assets//images//$imageUrl",
-              height: deviceHeight * 0.08,
+              height: deviceHeight * 0.1,
               width: deviceWidth * 0.2,
               fit: BoxFit.cover,
             ),
@@ -753,13 +809,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                     Expanded(
                       child: TextField(
                         controller:
-                            subcatDetails[subCatIndex]["services"][index]["acontroller"],
+                        subcatDetails[subCatIndex]["services"][index]["acontroller"],
                         onChanged: (value) {
                           var data =
-                              subcatDetails[subCatIndex]["services"][index];
+                          subcatDetails[subCatIndex]["services"][index];
 
                           subcatDetails[subCatIndex]["services"][index]["acontroller"]
-                                  .text =
+                              .text =
                               value;
 
                           double? totalvalue = 0;
@@ -777,8 +833,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                             } catch (err) {
                               discount = 0;
                             }
-                            
- var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+
+                            var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
                             totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
                           } catch (err) {
                             totalvalue = 0;
@@ -814,154 +870,156 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 8,
+                            vertical: 12,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                   SizedBox(height: 50.0, child: DropdownMenu<String>(
-                    inputDecorationTheme: const InputDecorationTheme(
-                        contentPadding: EdgeInsets.all(10),
-                        constraints: BoxConstraints.expand(height: 40),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(10),
+                    // Dropdown Menu - now using Expanded to match price row width
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        height: 48,
+                        child: DropdownMenu<String>(
+                          inputDecorationTheme: const InputDecorationTheme(
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                            constraints: BoxConstraints.tightFor(height: 48),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(8),
+                              ),
+                              borderSide: BorderSide(
+                                width: 1.2,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(8),
+                              ),
+                            ),
                           ),
-                          borderSide: BorderSide(
-                            width: 1.2,
-                            color: Colors.grey,
-                          ),
+                          initialSelection: subcatDetails[subCatIndex]["services"][index]["menuselect"],
+                          onSelected: (String? value) {
+                            // This is called when the user selects an item.
+                            setState(() {
+                              subcatDetails[subCatIndex]["services"][index]["menuselectVal"] = value;
+                              dropdownValue = value!;
+                            });
+
+                            var data =
+                            subcatDetails[subCatIndex]["services"][index];
+
+                            // subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                            //         .text =
+                            //     value;
+
+                            double totalvalue = 0;
+                            try {
+                              var amount = int.parse(
+                                subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                    .text,
+                              );
+                              var discount = 0;
+                              try {
+                                discount = int.parse(
+                                  subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                      .text,
+                                );
+                              } catch (err) {
+                                discount = 0;
+                              }
+
+                              var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                              totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
+                            } catch (err) {
+                              totalvalue = 0;
+                            }
+
+                            setState(() {
+                              subcatDetails[subCatIndex]["services"][index]["ttotal"] =
+                                  totalvalue.toString();
+
+                              // You can also update other properties of the object here
+                            });
+                          },
+                          dropdownMenuEntries: menuEntries,
                         ),
                       ),
-                      initialSelection:subcatDetails[subCatIndex]["services"][index]["menuselect"],
-                      onSelected: (String? value) {
-                        // This is called when the user                    selects an item.
-                        setState(() {
-                          subcatDetails[subCatIndex]["services"][index]["menuselectVal"] =  value;
-                          dropdownValue = value!;
-                        });
-
-                        var data =
-                              subcatDetails[subCatIndex]["services"][index];
-
-                          // subcatDetails[subCatIndex]["services"][index]["dcontroller"]
-                          //         .text =
-                          //     value;
-
-                          double totalvalue = 0;
-                          try {
-                            var amount = int.parse(
-                              subcatDetails[subCatIndex]["services"][index]["acontroller"]
-                                  .text,
-                            );
-                            var discount = 0;
-                            try {
-                              discount = int.parse(
-                                subcatDetails[subCatIndex]["services"][index]["dcontroller"]
-                                    .text,
-                              );
-                            } catch (err) {
-                              discount = 0;
-                            }
-
-                             var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
-                            totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
-                          } catch (err) {
-                            totalvalue = 0;
-                          }
-
-                          setState(() {
-                            subcatDetails[subCatIndex]["services"][index]["ttotal"] =
-                                totalvalue.toString();
-
-                            // You can also update other properties of the object here
-                          });
-
-
-//////
-///
-///
-///
-///
-///
-
-
-
-
-
-
-
-                      },
-                      dropdownMenuEntries: menuEntries,
-                    )),
+                    ),
                     const SizedBox(width: 6),
 
+                    // Discount TextField - now using Expanded to match price row width
                     Expanded(
-                      child: TextField(
-                        controller:
-                            subcatDetails[subCatIndex]["services"][index]["dcontroller"],
-                        onChanged: (value) {
-                          var data =
-                              subcatDetails[subCatIndex]["services"][index];
+                      flex: 3,
+                      child: Container(
+                        height: 48,
+                        child: TextField(
+                          controller:
+                          subcatDetails[subCatIndex]["services"][index]["dcontroller"],
+                          onChanged: (value) {
+                            var data =
+                            subcatDetails[subCatIndex]["services"][index];
 
-                          subcatDetails[subCatIndex]["services"][index]["dcontroller"]
-                                  .text =
-                              value;
+                            subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                .text =
+                                value;
 
-                          double totalvalue = 0;
-                          try {
-                            var amount = int.parse(
-                              subcatDetails[subCatIndex]["services"][index]["acontroller"]
-                                  .text,
-                            );
-                            var discount = 0;
+                            double totalvalue = 0;
                             try {
-                              discount = int.parse(
-                                subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                              var amount = int.parse(
+                                subcatDetails[subCatIndex]["services"][index]["acontroller"]
                                     .text,
                               );
+                              var discount = 0;
+                              try {
+                                discount = int.parse(
+                                  subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                      .text,
+                                );
+                              } catch (err) {
+                                discount = 0;
+                              }
+
+                              var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                              totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
                             } catch (err) {
-                              discount = 0;
+                              totalvalue = 0;
                             }
 
-                             var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
-                            totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
-                          } catch (err) {
-                            totalvalue = 0;
-                          }
+                            setState(() {
+                              subcatDetails[subCatIndex]["services"][index]["ttotal"] =
+                                  totalvalue.toString();
 
-                          setState(() {
-                            subcatDetails[subCatIndex]["services"][index]["ttotal"] =
-                                totalvalue.toString();
+                              // You can also update other properties of the object here
+                            });
 
-                            // You can also update other properties of the object here
-                          });
-
-                          // subcatDetails[subCatIndex]["services"][index]["tprice"] = value;
-                          // Perform actions with the updated 'value'
-                          print('Text changed: $value');
-                        },
-                        decoration: InputDecoration(
-                          hintText: "Discount",
-                        
-                          hintStyle: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey,
+                            // subcatDetails[subCatIndex]["services"][index]["tprice"] = value;
+                            // Perform actions with the updated 'value'
+                            print('Text changed: $value');
+                          },
+                          decoration: InputDecoration(
+                            hintText: "Discount",
+                            hintStyle: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                            isDense: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 12,
+                            ),
                           ),
-                          isDense: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                          ),
+                          keyboardType: TextInputType.number,
                         ),
-                        keyboardType: TextInputType.number,
                       ),
                     ),
                   ],
@@ -985,7 +1043,6 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     );
   }
 
-  // ---------------- Bottom Sheet ----------------
   void _showJobPackageBottomSheet() {
     showModalBottomSheet(
       context: context,

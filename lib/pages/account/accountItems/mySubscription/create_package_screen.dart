@@ -46,6 +46,7 @@ class _CreatePackageScreenState extends State<CreatePackageScreen> {
   ];
 
   List<dynamic> packageDetails  =[];
+  List<dynamic> planDet  =[];
 
   dynamic userData = {};
 @override
@@ -59,9 +60,47 @@ class _CreatePackageScreenState extends State<CreatePackageScreen> {
     }
 
     callgetPackagesAPI();
+    callBasicPackagesAPI();
   }
 
-  void callgetPackagesAPI() async {
+  void callBasicPackagesAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiServiceWithJson(EndPoints.packagesApi, {
+       
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = value;
+          if (parsed["status"] == "valid") {
+            planDet = parsed["plans"];
+
+            setState(() {
+              planDet = parsed["plans"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+   void callgetPackagesAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
@@ -99,11 +138,11 @@ class _CreatePackageScreenState extends State<CreatePackageScreen> {
   }
 
 
-  void _showPlanSelectionDialog(dynamic category) {
+  void _showPlanSelectionDialog(dynamic category ,dynamic planDet) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return PlanSelectionDialog(category: category);
+        return PlanSelectionDialog(category: category,plans:planDet);
       },
     );
   }
@@ -187,7 +226,7 @@ class _CreatePackageScreenState extends State<CreatePackageScreen> {
                     padding: EdgeInsets.only(bottom: deviceHeight * 0.02),
                     child: GestureDetector(
                       onTap: () {
-                        _showPlanSelectionDialog(packageDetails[index]!);
+                        _showPlanSelectionDialog(packageDetails[index]!,planDet);
                       },
                       child: _buildCategoryCard(
                         packageDetails[index]["category"]!,
@@ -292,8 +331,8 @@ class _CreatePackageScreenState extends State<CreatePackageScreen> {
 // Dialog version of PlanSelectionScreen
 class PlanSelectionDialog extends StatefulWidget {
   final dynamic category;
-
-  const PlanSelectionDialog({super.key, required this.category});
+ final dynamic plans;
+  const PlanSelectionDialog({super.key, required this.category,required this.plans});
 
   @override
   State<PlanSelectionDialog> createState() => _PlanSelectionDialogState();
@@ -357,13 +396,13 @@ class _PlanSelectionDialogState extends State<PlanSelectionDialog> {
 
             /// Plans List
             Column(
-              children: List.generate(plans.length, (index) {
+              children: List.generate(widget.plans.length, (index) {
                 return Padding(
                   padding: EdgeInsets.only(bottom: deviceHeight * 0.015),
                   child: _buildPlanCard(
                     index,
-                    plans[index]["title"]!,
-                    plans[index]["subtitle"]!,
+                    widget.plans[index]["plan"]!,
+                    "",
                     deviceWidth,
                     deviceHeight,
                   ),
@@ -390,13 +429,14 @@ class _PlanSelectionDialogState extends State<PlanSelectionDialog> {
                   Config.technicianServicesPricesRouteName,
                   arguments: {
                     "categoryName": widget.category,
-                    "planType": plans[selectedIndex!]['title']!,
+                    "planName": widget.plans[selectedIndex],
+                    "planType":widget.plans[selectedIndex]["plan"]!,
 
                   },
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("${plans[selectedIndex!]['title']} Selected"),
+                    content: Text("${widget.plans[selectedIndex]["plan"]} Selected"),
                   ),
                 );
               }
