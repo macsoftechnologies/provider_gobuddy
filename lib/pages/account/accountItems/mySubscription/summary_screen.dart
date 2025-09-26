@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:gobuddy/data/preferences.dart';
@@ -26,8 +27,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
   String _appliedCoupon = '';
 
   // List of plans (Dynamic)
-  List<dynamic> plans = [
-];
+  List<dynamic> plans = [];
 
   List<dynamic> subDetails = [];
 
@@ -42,16 +42,17 @@ class _SummaryScreenState extends State<SummaryScreen> {
         UtilClass.hideProgress();
         dynamic parsed = {};
         try {
-          parsed = await json.decode(value);
+          parsed = value;
           if (parsed["status"] == "valid") {
 
-
+              plans = parsed["data"];
             setState(() {
-              plans = [
-   parsed["data"]
-  ];
-
+              plans = parsed["data"];
             });
+
+            var data =  parsed["data"][0];
+
+            print(data);
             //   plans = parsed["data"];
             // setState(() {
             //   plans = parsed["data"];
@@ -81,8 +82,6 @@ class _SummaryScreenState extends State<SummaryScreen> {
   dynamic summaryData = {};
   dynamic userData = {};
 
-
-
   @override
   void initState() {
     super.initState();
@@ -92,16 +91,16 @@ class _SummaryScreenState extends State<SummaryScreen> {
       userData = json.decode(userDataValue);
     }
 
-  //    setState(() {
-  //             plans =  [
-  //   {
-  //     "title": "AC Technician",
-  //     "subtitle": "Basic Plan ( 20 Jobs )",
-  //     "price": 999,
-  //   },
-    
-  // ];
-  //           });
+    //    setState(() {
+    //             plans =  [
+    //   {
+    //     "title": "AC Technician",
+    //     "subtitle": "Basic Plan ( 20 Jobs )",
+    //     "price": 999,
+    //   },
+
+    // ];
+    //           });
 
     summaryDataAPI();
   }
@@ -202,6 +201,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   itemCount: plans.length,
                   itemBuilder: (context, index) {
                     final plan = plans[index];
+
+                    var data = plans[index]["package"];
                     return Container(
                       margin: const EdgeInsets.only(bottom: 5),
                       padding: const EdgeInsets.all(16),
@@ -224,7 +225,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                plan["category"],
+                                plans[index]["category"],
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -232,7 +233,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 ),
                               ),
                               Text(
-                                plan["subscription"],
+                                plans[index]["subscription"],
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
@@ -251,7 +252,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 ),
                               ),
                               Text(
-                                "₹${plan["package"]}",
+                                "₹${plans[index]["package"]}",
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -269,6 +270,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                 // Add More Plans
                 GestureDetector(
                   onTap: () {
+
+                    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == Config.createPackageRouteName);
+
                     // setState(() {
                     //   plans.add({
                     //     "title": "New Plan",

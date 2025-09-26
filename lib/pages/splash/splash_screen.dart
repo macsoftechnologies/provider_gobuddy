@@ -89,6 +89,8 @@ void initState() {
     Navigator.of(context).pushReplacementNamed(
       Config.dashboardcRouteName,
     );
+
+  //Navigator.pushNamed(context, Config.planSummaryRouteName);
   }
 
   @override
