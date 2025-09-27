@@ -1,10 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/pages/account/accountItems/mySubscription/update_plan.dart';
 import '../../../../components/custom_back_button.dart';
 import '../../../../utils/config.dart';
 import 'change_prices.dart';
 import 'create_package_screen.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/config.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 // Global variable to track if there are active or expired subscriptions
 bool hasSubscriptions = true; // Set this based on your actual data
@@ -38,26 +43,40 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   {
     "subscriptions": [
       {
-        "title": "AC Technician",
-        "plan": "Basic Plan",
-        "totalJobs": 20,
+        "category": "AC Technician",
+        "subscription": "Basic Plan",
+        "jobs": 20,
         "used": 10,
         "missed": 0,
         "remaining": 10,
-        "price": 999,
-        "status": "Active",
-        "subscribedOn": "12/03/2025"
+        "package": 999,
+        "status_text": "active",
+        "subscribedOn": "12/03/2025",
+        "index":0
       },
       {
-        "title": "Plumbing",
-        "plan": "Basic Plan",
-        "totalJobs": 20,
+        "category": "Plumbing",
+        "subscription": "Basic Plan",
+        "jobs": 20,
         "used": 15,
         "missed": 5,
         "remaining": 0,
-        "price": 700,
-        "status": "Expired",
-        "subscribedOn": "10/04/2024"
+        "package": 700,
+        "status_text": "Expired",
+        "subscribedOn": "10/04/2024",
+        "index":1
+      },
+      {
+        "category": "Plumbing",
+        "subscription": "Basic Plan",
+        "jobs": 20,
+        "used": 15,
+        "missed": 5,
+        "remaining": 0,
+        "package": 700,
+        "status_text": "active",
+        "subscribedOn": "10/04/2024",
+        "index":2
       }
     ]
   }
@@ -75,15 +94,58 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
 
   late List subscriptions;
   int selectedIndex = 0; // Default tab selected
-
+    dynamic subscriptionsDetails = [];
+  dynamic userData= {};
   @override
   void initState() {
     super.initState();
     final data = json.decode(subscriptionJson);
-    subscriptions = data["subscriptions"];
+    //  subscriptions = data["subscriptions"];
 
-    // Update global subscription status
-    hasSubscriptions = subscriptions.isNotEmpty;
+     var userDataValue = Preferences.getUserDetails();
+      if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
+    callgetSubscriptionsAPI();
+  }
+
+
+   void callgetSubscriptionsAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.subscriptionorders, {
+        "provider_id": userData["user_id"] ?? "4355",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = value;
+          if (parsed["status"] == "valid") {
+            subscriptions = parsed["data"];
+
+
+            setState(() {
+              subscriptions = parsed["data"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   @override
@@ -157,13 +219,17 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
               SizedBox(height: size.height * 0.02),
 
               // Tabs
-              Row(
-                children: [
-                  _buildTab("AC Technician", 0, subscription["title"], size),
-                  SizedBox(width: size.width * 0.03),
-                  _buildTab("Plumbing", 1, subscription["title"], size),
-                ],
+               Row(
+                children: subscriptions.asMap().entries.map((entry) {
+                   int index = entry.key;
+                  dynamic item = entry.value;
+                  return _buildTab( item["category"], index,  item["category"], size);
+                  // SizedBox(width: size.width * 0.03),
+                  // _buildTab("Plumbing", 1, subscription["title"], size),
+                
+                  }).toList(),
               ),
+
               SizedBox(height: size.height * 0.02),
 
               // Subscription Card
@@ -202,8 +268,8 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   }
 
   Widget _buildSubscriptionCard(Map subscription, Size size) {
-    final status = subscription["status"];
-    final isActive = status == "Active";
+    final status = subscription["status_text"];
+    final isActive = status == "active";
 
     return Container(
       width: double.infinity,
@@ -225,7 +291,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("${subscription["title"]}\n${subscription["plan"]}",
+              Text("${subscription["category"]}\n${subscription["subscription"]}",
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: size.width * 0.045)),
@@ -252,7 +318,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                     ),
                   ),
                   SizedBox(height: size.height * 0.01),
-                  Text("₹ ${subscription["price"]}",
+                  Text("₹ ${subscription["package"]}",
                       style: TextStyle(
                           fontSize: size.width * 0.05,
                           fontWeight: FontWeight.bold)),
@@ -267,7 +333,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildJobInfo(
-                  "Total Jobs", subscription["totalJobs"].toString(), size),
+                  "Total Jobs", subscription["jobs"].toString(), size),
               _buildJobInfo("Used", subscription["used"].toString(), size),
               _buildJobInfo("Missed", subscription["missed"].toString(), size),
               _buildJobInfo(
@@ -280,7 +346,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
           Text("Subscribed on",
               style:
               TextStyle(color: Colors.grey, fontSize: size.width * 0.035)),
-          Text(subscription["subscribedOn"],
+          Text(subscription["subscribedon"]??"",
               style: TextStyle(
                   fontSize: size.width * 0.04, fontWeight: FontWeight.bold)),
 
@@ -384,7 +450,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                             });
                           },
                           title: Text(
-                              "${jobPackages[index]["jobs"]} Jobs / ₹ ${jobPackages[index]["price"]}"),
+                              "${jobPackages[index]["jobs"]} Jobs / ₹ ${jobPackages[index]["package"]}"),
                         ),
                         const Divider(),
                       ],

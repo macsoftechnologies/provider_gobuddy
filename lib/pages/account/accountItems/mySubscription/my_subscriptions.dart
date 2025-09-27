@@ -1,6 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/pages/account/accountItems/mySubscription/update_plan.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/config.dart';
+import 'package:gobuddy/utils/util_class.dart';
 // import 'package:providerapp_gobuddy/screens/subscriptionScreens/update_plan.dart';
 //
 // import '../../utilites/custombackbutton.dart';
@@ -57,12 +62,59 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
 
   late List subscriptions;
   int selectedIndex = 0; // Default tab selected
+    dynamic subscriptionsDetails = [];
+  dynamic userData= {};
 
   @override
   void initState() {
     super.initState();
     final data = json.decode(subscriptionJson);
     subscriptions = data["subscriptions"];
+
+     var userDataValue = Preferences.getUserDetails();
+      if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
+    callgetSubscriptionsAPI();
+  }
+
+
+   void callgetSubscriptionsAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.subscriptionorders, {
+        "provider_id": userData["user_id"] ?? "4355",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            subscriptionsDetails = parsed["data"];
+
+
+            setState(() {
+              subscriptionsDetails = parsed["data"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   @override

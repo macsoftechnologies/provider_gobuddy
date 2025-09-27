@@ -10,6 +10,7 @@ import 'package:gobuddy/utils/util_class.dart';
 
 import '../../../../components/coupon_applied_alert.dart';
 import '../../../paymentGateway/payment_screen.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 // import '../../utilites/coupon_applied_alert.dart';
 // import '../payment_screen.dart';
@@ -25,59 +26,42 @@ class _SummaryScreenState extends State<SummaryScreen> {
   final TextEditingController _couponController = TextEditingController();
   bool _isCouponApplied = false;
   String _appliedCoupon = '';
-String _appliedCouponAmount = '0';
+  String _appliedCouponAmount = '0';
   // List of plans (Dynamic)
   List<dynamic> plans = [];
 
   List<dynamic> subDetails = [];
-void CoupounAPIData() async {
+  // ignore: non_constant_identifier_names
+  void coupounAPIData() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.coupounApi, {
-        "user_id": userData["user_id"]??"4355",
-         "coupon": _couponController.text,
+        "user_id": userData["user_id"] ?? "4355",
+        "coupon": _couponController.text,
       }).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = await json.decode(value);
         try {
-        
           if (parsed["status"] == "valid") {
-         var amount = parsed["coupon_amount"];
+            var amount = parsed["coupon_amount"];
             setState(() {
-        _isCouponApplied = true;
-        _appliedCouponAmount = amount;
-        _appliedCoupon = _couponController.text;
-      });
+              _isCouponApplied = true;
+              _appliedCouponAmount = amount;
+              _appliedCoupon = _couponController.text;
+            });
 
-      
+            showDialog(
+              context: context,
+              builder: (_) => ReferralDialog(
+                title: "Offer code applied",
+                subtitle: "₹ $amount savings with this code",
+                image: "assets/images/couponCode.png",
+              ),
+            );
 
-      showDialog(
-        context: context,
-        builder: (_) => ReferralDialog(
-          title: "Offer code applied",
-          subtitle: "₹ $amount savings with this code",
-          image: "assets/images/couponCode.png",
-        ),
-      );
-
-            //   plans = parsed["data"];
-            // setState(() {
-            //   plans = parsed["data"];
-            // });
-
-            // var data =  parsed["data"][0];
-
-            // print(data);
-            //   plans = parsed["data"];
-            // setState(() {
-            //   plans = parsed["data"];
-            // });
-
-            // print(plans);
           } else {
-           
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
               // ignore: use_build_context_synchronously
@@ -95,6 +79,7 @@ void CoupounAPIData() async {
       UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
     }
   }
+
   void summaryDataAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
@@ -108,15 +93,48 @@ void CoupounAPIData() async {
         try {
           parsed = value;
           if (parsed["status"] == "valid") {
-
-              plans = parsed["data"];
+            plans = parsed["data"];
             setState(() {
               plans = parsed["data"];
             });
 
-            var data =  parsed["data"][0];
+            var data = parsed["data"][0];
 
             print(data);
+            
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  void deleteSubscAPI(String id) async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiServiceWithJson(EndPoints.deleteprovSubscriptionApi, {
+        "subscription_id": id,
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            summaryDataAPI();
             //   plans = parsed["data"];
             // setState(() {
             //   plans = parsed["data"];
@@ -172,64 +190,187 @@ void CoupounAPIData() async {
   String get totalPrice {
     double total = 0.0;
     for (var plan in plans) {
-      var package  = double.parse(plan["package"]);
+      var package = double.parse(plan["package"]);
       total += package;
     }
     return total.toString();
   }
+
   String get finalPrice {
     double total = 0.0;
     for (var plan in plans) {
-      var package  = double.parse(plan["package"]);
+      var package = double.parse(plan["package"]);
       total += package;
     }
 
     double finalPrice = total - double.parse(_appliedCouponAmount);
     return finalPrice.toString();
   }
-    String get DiscountPrice {
+
+  String get DiscountPrice {
     double total = 0.0;
     for (var plan in plans) {
-      var package  = double.parse(plan["package"]);
+      var package = double.parse(plan["package"]);
       total += package;
     }
     return total.toString();
   }
 
-
   void removePlan(int index) {
-    setState(() {
-      plans.removeAt(index);
-    });
+    var subId = plans[index]["subscription_id"];
+    deleteSubscAPI(subId);
+    // setState(() {
+    //   plans.removeAt(index);
+    // });
   }
 
   void _applyCoupon() {
     if (_couponController.text.isNotEmpty) {
-
-      CoupounAPIData();
-      // setState(() {
-      //   _isCouponApplied = true;
-      //   _appliedCoupon = _couponController.text;
-      // });
-
-      // showDialog(
-      //   context: context,
-      //   builder: (_) => const ReferralDialog(
-      //     title: "Offer code applied",
-      //     subtitle: "₹ 100 savings with this code",
-      //     image: "assets/images/couponCode.png",
-      //   ),
-      // );
-
-      // Show success message
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(
-      //     content: Text("Coupon applied successfully!"),
-      //     backgroundColor: Colors.green,
-      //   ),
-      // );
+      coupounAPIData();
     }
   }
+
+  /////
+  ///
+  ///
+
+  void callRagerPayment() async {
+
+    var amount = double.parse(finalPrice).toInt(); ;
+    Razorpay razorpay = Razorpay();
+    var options = {
+      'key': 'rzp_live_ZdGjJKZdukGGzL',
+      'amount':  100,
+      'name': 'Go buddy',
+      'description': 'Subscription',
+      'retry': {'enabled': true, 'max_count': 1},
+      'send_sms_hash': true,
+      'prefill': {'contact': '9291575784', 'email': 'test@razorpay.com'},
+      'external': {
+        'wallets': ['paytm'],
+      },
+    };
+    razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentErrorResponse);
+    razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccessResponse);
+    razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWalletSelected);
+    razorpay.open(options);
+  }
+
+  void handlePaymentErrorResponse(PaymentFailureResponse response) {
+    /*
+    * PaymentFailureResponse contains three values:
+    * 1. Error Code
+    * 2. Error Description
+    * 3. Metadata
+    * */
+    showAlertDialog(
+      context,
+      "Payment Failed",
+      "Code: ${response.code}\nDescription: ${response.message}\nMetadata:${response.error.toString()}",
+    );
+  }
+
+  void handlePaymentSuccessResponse(PaymentSuccessResponse response) {
+    /*
+    * Payment Success Response contains three values:
+    * 1. Order ID
+    * 2. Payment ID
+    * 3. Signature
+    * */
+    // showAlertDialog(
+    //   context,
+    //   "Payment Successful",
+    //   "Payment ID: ${response.paymentId}",
+    // );
+
+    callpaymentVeifyAPI(response.paymentId!);
+  }
+
+  void handleExternalWalletSelected(ExternalWalletResponse response) {
+    showAlertDialog(
+      context,
+      "External Wallet Selected",
+      "${response.walletName}",
+    );
+  }
+
+  void showAlertDialog(BuildContext context, String title, String message) {
+    // set up the buttons
+    Widget continueButton = ElevatedButton(
+      child: const Text("Continue"),
+      onPressed: () {},
+    );
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(title: Text(title), content: Text(message));
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  void callpaymentVeifyAPI(String paymentid) async {
+    var internet = await UtilClass.checkInternet();
+      dynamic subscriptionIds = plans.map((sub) => sub["subscription_id"]).toList();
+      String commaSeparatedSub= subscriptionIds.join(', ');
+
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.subPayment, {
+        "user_id": userData["user_id"] ?? "4361",
+        "coupon": _couponController.text,
+        "amount":finalPrice,
+      
+        "saving_amount": _appliedCouponAmount,
+        "payment_id": paymentid,
+        "subscription_ids":commaSeparatedSub
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            showDialog(
+              context: context,
+              builder: (context) {
+                Future.delayed(const Duration(seconds: 3), () {
+                  Navigator.of(context).pop(); // close the dialog first
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(Config.regiSuccessRouteName);
+                });
+
+                return const ReferralDialog(
+                  title: "Payment Successful",
+                  subtitle: "Thank You for purchasing the subscription.",
+                  image: "assets/images/greentick.png",
+                );
+              },
+            );
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  ///
+  ///
 
   @override
   Widget build(BuildContext context) {
@@ -356,8 +497,11 @@ void CoupounAPIData() async {
                 // Add More Plans
                 GestureDetector(
                   onTap: () {
-
-                    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == Config.createPackageRouteName);
+                    Navigator.of(context).popUntil(
+                      (route) =>
+                          route.isFirst ||
+                          route.settings.name == Config.createPackageRouteName,
+                    );
 
                     // setState(() {
                     //   plans.add({
@@ -433,42 +577,39 @@ void CoupounAPIData() async {
                       Row(
                         children: [
                           Expanded(
-                            child: !_isCouponApplied?TextField(
-                              controller: _couponController,
-                              decoration: InputDecoration(
-                                hintText: _isCouponApplied
-                                    ? _appliedCoupon
-                                    : "Enter coupon code",
-                                filled: true,
-                                fillColor: Colors.grey.shade200,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                              ),
-                              enabled: !_isCouponApplied,
-                            ):ActionChip(
-         
-          label: Text(_couponController.text),
-           avatar: Icon(Icons.delete),
-          onPressed: () {
-
-
-      
-_couponController.text = "";
-_appliedCouponAmount = "0";
-             setState(() {
-              _isCouponApplied = false;
-               _appliedCouponAmount = "0";
-              
-            });
-           
-          },
-        ),
+                            child: !_isCouponApplied
+                                ? TextField(
+                                    controller: _couponController,
+                                    decoration: InputDecoration(
+                                      hintText: _isCouponApplied
+                                          ? _appliedCoupon
+                                          : "Enter coupon code",
+                                      filled: true,
+                                      fillColor: Colors.grey.shade200,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                    enabled: !_isCouponApplied,
+                                  )
+                                : ActionChip(
+                                    label: Text(_couponController.text),
+                                    avatar: Icon(Icons.delete),
+                                    onPressed: () {
+                                      _couponController.text = "";
+                                      _appliedCouponAmount = "0";
+                                      setState(() {
+                                        _isCouponApplied = false;
+                                        _appliedCouponAmount = "0";
+                                      });
+                                    },
+                                  ),
                           ),
                           const SizedBox(width: 10),
                           GestureDetector(
@@ -547,8 +688,7 @@ _appliedCouponAmount = "0";
                   ),
                   child: Column(
                     children: [
-                      
-                       Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
@@ -645,9 +785,10 @@ _appliedCouponAmount = "0";
                     ),
                     GestureDetector(
                       onTap: () {
+                        callRagerPayment();
                         // Navigator.push(
                         //   context,
-                        //   MaterialPageRoute(builder: (context) => PaymentMethodScreen(amount: totalPrice.toDouble(), fromScreen: 'subscription',)),
+                        //   MaterialPageRoute(builder: (context) => PaymentMethodScreen(amount: 0.00, fromScreen: 'subscription',)),
                         // );
                       },
                       child: Container(

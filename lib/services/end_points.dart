@@ -22,8 +22,15 @@ class EndPoints {
       "${newbaseUrl}add_provider_subscription";
   static const String getprovSubscriptionApi =
       "${newbaseUrl}get_provider_subscription";
+       static const String deleteprovSubscriptionApi =
+      "${newbaseUrl}delete_provider_subscription";
 
        static const String coupounApi =
       "${newbaseUrl}check_coupon";
+      static const String subPayment =
+      "${newbaseUrl}provider_subscription_payment";
+
+         static const String subscriptionorders =
+      "${newbaseUrl}get_provider_subscriptionorders";
       
 }
