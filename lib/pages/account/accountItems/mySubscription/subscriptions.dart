@@ -100,7 +100,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   void initState() {
     super.initState();
     final data = json.decode(subscriptionJson);
-    //  subscriptions = data["subscriptions"];
+     subscriptions = data["subscriptions"];
 
      var userDataValue = Preferences.getUserDetails();
       if (userDataValue != null) {
@@ -219,16 +219,19 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
               SizedBox(height: size.height * 0.02),
 
               // Tabs
-               Row(
-                children: subscriptions.asMap().entries.map((entry) {
-                   int index = entry.key;
-                  dynamic item = entry.value;
-                  return _buildTab( item["category"], index,  item["category"], size);
-                  // SizedBox(width: size.width * 0.03),
-                  // _buildTab("Plumbing", 1, subscription["title"], size),
-                
-                  }).toList(),
-              ),
+              SizedBox(
+  height: 50, // Adjust the height as needed
+  child: SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: subscriptions.asMap().entries.map((entry) {
+        int index = entry.key;
+        dynamic item = entry.value;
+        return _buildTab(item["category"], index, item["category"], size);
+      }).toList(),
+    ),
+  ),
+),
 
               SizedBox(height: size.height * 0.02),
 
@@ -364,10 +367,16 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8))),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ChangePricesScreen()),
-                    );
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(builder: (_) => ChangePricesScreen()),
+                    // );
+                     Navigator.pushNamed(
+                  // ignore: use_build_context_synchronously
+                  context,
+                  Config.changePriceRouteName,
+                  arguments: subscription,
+                );
                   },
                   child: const Text("Change Prices"),
                 ),

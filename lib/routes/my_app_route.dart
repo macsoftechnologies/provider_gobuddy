@@ -13,6 +13,8 @@ import '../pages/account/accountItems/mySubscription/my_subscriptions.dart';
 import '../pages/account/accountItems/mySubscription/subscriptions.dart';
 import '../pages/account/accountItems/mySubscription/summary_screen.dart';
 import '../pages/account/accountItems/mySubscription/technician_services_prices.dart';
+import '../pages/account/accountItems/mySubscription/edit_technician_services_prices.dart';
+import '../pages/account/accountItems/mySubscription/change_prices.dart';
 import '../pages/account/accountItems/privacyPolicy/privacy_policy.dart';
 import '../pages/account/accountItems/referAndEarn/refer_earn.dart';
 import '../pages/account/accountItems/requestTool/request_tool_page.dart';
@@ -131,6 +133,29 @@ class MyAppRouteState extends State<MyAppRoute> {
               planType: args['planType'] ?? '',
               
 
+            ),
+          );
+        }
+
+         if (settings.name == Config.edittechnicianServicesPricesRouteName) {
+          final args = settings.arguments as Map<String, dynamic>;
+
+          return MaterialPageRoute(
+            builder: (_) => EditTechnicianServicesPrices(
+              categoryName: args ,
+               planName: args['planName'] ?? '',
+              planType: args['planType'] ?? '',
+              
+
+            ),
+          );
+        }
+        if (settings.name == Config.changePriceRouteName) {
+          final args = settings.arguments as Map<String, dynamic>;
+
+          return MaterialPageRoute(
+            builder: (_) => ChangePricesScreen(
+              subscriptiondetails: args 
             ),
           );
         }

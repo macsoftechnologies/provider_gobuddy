@@ -1,16 +1,25 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/config.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 import '../../../../components/custom_back_button.dart';
 
-
-
 class ChangePricesScreen extends StatefulWidget {
-  const ChangePricesScreen({super.key});
+  final dynamic subscriptiondetails;
+  const ChangePricesScreen({super.key, required this.subscriptiondetails});
 
   @override
   State<ChangePricesScreen> createState() => _ChangePricesScreenState();
 }
+
+typedef MenuEntry = DropdownMenuEntry<String>;
+const List<String> list = ['%', '₹'];
 
 class _ChangePricesScreenState extends State<ChangePricesScreen> {
   // Sample JSON data
@@ -59,14 +68,261 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
   }
   ''';
 
-  late Map<String, dynamic> subscriptionData;
+  late Map<String, dynamic> subscriptionData = [] as Map<String, dynamic>;
   int selectedCategory = 0;
+
+  double deviceHeight = 0;
+  double deviceWidth = 0;
+  int subCatIndex = 0;
+  dynamic subCat = "";
+  bool isPackageSelected = false; // for Add button state
+  int? selectedPackage; // selected package index
+
+  // Job Packages JSON
+  final List<Map<String, dynamic>> jobPackages = [
+    {"jobs": 20, "price": 999},
+    {"jobs": 40, "price": 1499},
+    {"jobs": 60, "price": 2399},
+  ];
+
+  static final List<MenuEntry> menuEntries = UnmodifiableListView<MenuEntry>(
+    list.map<MenuEntry>((String name) => MenuEntry(value: name, label: name)),
+  );
+  String dropdownValue = list.first;
+
+  List<dynamic> subcatDetails = [];
+  List<dynamic> serviceDetails = [];
+  List<dynamic> packages = [];
+
+  dynamic userData = {};
+
+  dynamic selectedPack = {};
+
+  void callAddsubscriptionAPI(dynamic data) async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiServiceWithJson(
+        EndPoints.addprovSubscriptionApi,
+        data,
+      ).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+
+            Navigator.pushNamed(context, Config.planSummaryRouteName);
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  void callgetPlansAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.packagesApi, {
+        "sub_category_id": "27",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            packages = parsed["package"];
+
+            setState(() {
+              selectedPack = parsed["package"][0];
+            });
+
+            setState(() {
+              packages = parsed["package"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  void callgetServicesAPI(int id) async {
+    setState(() {
+      serviceDetails = subcatDetails[id]["services"];
+    });
+
+    // var internet = await UtilClass.checkInternet();
+    // if (internet) {
+    //   // ignore: use_build_context_synchronously
+    //   UtilClass.showProgress(context: context);
+    //   await Repository.postApiService(EndPoints.servicesApi, {
+    //     "sub_category_id": id,
+    //   }).then((value) async {
+    //     UtilClass.hideProgress();
+    //     dynamic parsed = {};
+    //     try {
+    //       parsed = await json.decode(value);
+    //       if (parsed["status"] == "valid") {
+    //         serviceDetails = parsed["services"];
+
+    //         setState(() {
+    //           serviceDetails = parsed["services"];
+    //         });
+    //       } else {
+    //         // ignore: use_build_context_synchronously
+    //         UtilClass.showAlertDialog(
+    //           // ignore: use_build_context_synchronously
+    //           context: context,
+    //           message: parsed["message"],
+    //         );
+    //       }
+    //     } catch (e) {
+    //       print(e);
+    //     }
+    //     print(parsed["message"]);
+    //   });
+    // } else {
+    //   // ignore: use_build_context_synchronously
+    //   UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    // }
+  }
+
+  void callgetSubCatAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.catsubCat, {
+        "category_id": widget.subscriptiondetails["category_id"],
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            // subcatDetails = parsed["sub_category"];
+            dynamic existServices = widget.subscriptiondetails["services"];
+            for (int i = 0; i < parsed["sub_category"].length; i++) {
+              var services = parsed["sub_category"][i]["services"];
+              for (int j = 0; j < parsed["sub_category"].length; j++) {
+                try {
+                  List<dynamic> filteredObjects = existServices
+                      .where((obj) => obj["service_id"] ==  services[j]["service_id"])
+                      .toList();
+
+                      print(filteredObjects);
+                } catch (err) {}
+                try {
+                  services[j]["tprice"] = "";
+                  services[j]["tdiscount"] = "";
+                  services[j]["ttotal"] = "10.00";
+                  services[j]["acontroller"] = TextEditingController(text: '');
+                  services[j]["dcontroller"] = TextEditingController(text: '');
+                  services[j]["menuselect"] = list.first;
+                  services[j]["menuselectVal"] = "%";
+                } catch (err) {}
+
+                // Set the boolean value
+              }
+              parsed["sub_category"][i]["services"] = services;
+            }
+
+            setState(() {
+              subcatDetails = parsed["sub_category"];
+            });
+
+            // callgetServicesAPI(subcatDetails[0]["id"]);
+
+            // serviceDetails = subcatDetails[0]["services"];
+            subCat = subcatDetails[0]["id"];
+            setState(() {
+              serviceDetails = subcatDetails[0]["services"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+
+    var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
     subscriptionData = json.decode(jsonData)["subscription"];
+
+    var details = widget.subscriptiondetails["subscription_id"];
+    print(details);
+
+    callgetSubCatAPI();
+
+    // var data = widget.planName;
+
+    // setState(() {
+    //   selectedPack = widget.planName["packages"][0];
+    // });
+
+    // setState(() {
+    //   packages = widget.planName["packages"] ?? [];
+    // });
+    // callgetPlansAPI();
   }
+
+  // Sample JSON data for service cards
+  final List<Map<String, dynamic>> serviceList = [
+    {"title": "Dry Servicing a Split Ac", "image": "assets/images/ac.png"},
+    {"title": "AC Installation", "image": "assets/images/ac.png"},
+    {"title": "Jet servicing of split AC", "image": "assets/images/ac.png"},
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -87,10 +343,13 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                 children: [
                   CustomBackButton(),
                   SizedBox(width: size.width * 0.03),
-                  Text("Change Prices",
-                      style: TextStyle(
-                          fontSize: size.width * 0.05,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    "Change Prices",
+                    style: TextStyle(
+                      fontSize: size.width * 0.05,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -107,84 +366,120 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                            "${subscriptionData["title"]}\n${subscriptionData["plan"]}  (${subscriptionData["jobs"]} Jobs)",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: size.width * 0.045)),
-                        Text("₹ ${subscriptionData["price"]}",
-                            style: TextStyle(
-                                fontSize: size.width * 0.05,
-                                fontWeight: FontWeight.bold)),
+                          "${widget.subscriptiondetails["category"]}\n${widget.subscriptiondetails["subscription"]}  (${widget.subscriptiondetails["jobs"]} Jobs)",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: size.width * 0.045,
+                          ),
+                        ),
+                        Text(
+                          "₹ ${widget.subscriptiondetails["package"]}",
+                          style: TextStyle(
+                            fontSize: size.width * 0.05,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(height: size.height * 0.02),
 
                     // Category Tabs (NO SingleChildScrollView now)
-                    Row(
-                      children: List.generate(categories.length, (index) {
-                        final category = categories[index];
-                        final isSelected = index == selectedCategory;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() => selectedCategory = index);
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.only(right: size.width * 0.05),
-                            child: Column(
-                              children: [
-                                Container(
-                                  height: size.width * 0.2,
-                                  width: size.width * 0.2,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: isSelected
-                                            ? Colors.green
-                                            : Colors.grey.shade400,
-                                        width: 2),
-                                    borderRadius: BorderRadius.circular(12),
-                                    image: DecorationImage(
-                                      image: AssetImage(category["image"]),
+                    SizedBox(
+                      height: 100, // Set a fixed height for the horizontal list
+                      child: ListView.builder(
+                        scrollDirection: Axis
+                            .horizontal, // Important: Set scroll direction to horizontal
+                        itemCount:
+                            subcatDetails.length, // Number of items in the list
+                        itemBuilder: (context, index) {
+                          final bool isSelected = subCatIndex == index;
+                          return GestureDetector(
+                            onTap: () {
+                              subCat = subcatDetails[index]["id"];
+                              subCatIndex = index;
+                              callgetServicesAPI(index);
+                            },
+                            child: Container(
+                              width: 150,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.green
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      "https://admin.gobuddyindia.com//assets//images//${subcatDetails[index]["sub_image"]}",
+                                      height: 50,
+                                      width: 50,
                                       fit: BoxFit.cover,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(category["name"],
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    subcatDetails[index]["sub_category"],
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.green
-                                            : Colors.black87,
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal)),
-                                if (isSelected)
-                                  Container(
-                                    margin: const EdgeInsets.only(top: 2),
-                                    height: 2,
-                                    width: size.width * 0.2,
-                                    color: Colors.green,
+                                      fontSize: 12,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? Colors.green
+                                          : Colors.black87,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        },
+                      ),
                     ),
                     SizedBox(height: size.height * 0.02),
 
-                    Text("Enter your service price and discount",
-                        style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: size.width * 0.04)),
+                    Text(
+                      "Enter your service price and discount",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: size.width * 0.04,
+                      ),
+                    ),
 
                     SizedBox(height: size.height * 0.015),
 
                     // Service List
                     Column(
-                      children: List.generate(services.length, (index) {
-                        final service = services[index];
-                        return _buildServiceCard(service, size, index);
-                      }),
+                      children: serviceDetails.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        dynamic item = entry.value;
+                        return serviceCard(
+                          item["title"],
+                          item["service_image"],
+                          index,
+                        );
+                      }).toList(),
                     ),
 
                     SizedBox(height: size.height * 0.12), // space for button
@@ -202,18 +497,25 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
-                      padding:
-                          EdgeInsets.symmetric(vertical: size.height * 0.02),
+                      padding: EdgeInsets.symmetric(
+                        vertical: size.height * 0.02,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () {
                       debugPrint(
-                          "Updated Data: ${json.encode(subscriptionData)}");
+                        "Updated Data: ${json.encode(subscriptionData)}",
+                      );
                     },
-                    child: Text("Update Prices",
-                        style: TextStyle(
-                            color: Colors.white, fontSize: size.width * 0.045)),
+                    child: Text(
+                      "Update Prices",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: size.width * 0.045,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -224,13 +526,302 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
     );
   }
 
+  Widget serviceCard(String title, String imageUrl, int? index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              "https://admin.gobuddyindia.com//assets//images//$imageUrl",
+              height: deviceHeight * 0.1,
+              width: deviceWidth * 0.2,
+              fit: BoxFit.cover,
+            ),
+          ),
+          SizedBox(width: deviceWidth * 0.03),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller:
+                            subcatDetails[subCatIndex]["services"][index]["acontroller"],
+                        onChanged: (value) {
+                          var data =
+                              subcatDetails[subCatIndex]["services"][index];
+
+                          subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                  .text =
+                              value;
+
+                          double? totalvalue = 0;
+                          try {
+                            var amount = int.parse(
+                              subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                  .text,
+                            );
+                            var discount = 0;
+                            try {
+                              discount = int.parse(
+                                subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                    .text,
+                              );
+                            } catch (err) {
+                              discount = 0;
+                            }
+
+                            var types =
+                                subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                            totalvalue = (types == "%"
+                                ? (amount - (amount * discount) / 100)
+                                : (amount - discount).toDouble());
+                          } catch (err) {
+                            totalvalue = 0;
+                          }
+                          setState(() {
+                            subcatDetails[subCatIndex]["services"][index]["ttotal"] =
+                                totalvalue.toString();
+
+                            // You can also update other properties of the object here
+                          });
+
+                          // subcatDetails[subCatIndex]["services"][index]["tprice"] = value;
+                          // Perform actions with the updated 'value'
+                          print('Text changed: $value');
+                        },
+                        keyboardType: TextInputType.number,
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d+\.?\d{0,2}'),
+                          ), // Example: Allows digits and up to 2 decimal places
+                        ],
+
+                        decoration: InputDecoration(
+                          hintText: "price",
+                          prefixText: "₹ ",
+                          hintStyle: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    // Dropdown Menu - now using Expanded to match price row width
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        height: 48,
+                        child: DropdownMenu<String>(
+                          inputDecorationTheme: const InputDecorationTheme(
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 0,
+                            ),
+                            constraints: BoxConstraints.tightFor(height: 48),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(8),
+                              ),
+                              borderSide: BorderSide(
+                                width: 1.2,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(8),
+                              ),
+                            ),
+                          ),
+                          initialSelection:
+                              subcatDetails[subCatIndex]["services"][index]["menuselect"],
+                          onSelected: (String? value) {
+                            // This is called when the user selects an item.
+                            setState(() {
+                              subcatDetails[subCatIndex]["services"][index]["menuselectVal"] =
+                                  value;
+                              dropdownValue = value!;
+                            });
+
+                            var data =
+                                subcatDetails[subCatIndex]["services"][index];
+
+                            // subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                            //         .text =
+                            //     value;
+
+                            double totalvalue = 0;
+                            try {
+                              var amount = int.parse(
+                                subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                    .text,
+                              );
+                              var discount = 0;
+                              try {
+                                discount = int.parse(
+                                  subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                      .text,
+                                );
+                              } catch (err) {
+                                discount = 0;
+                              }
+
+                              var types =
+                                  subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                              totalvalue = (types == "%"
+                                  ? (amount - (amount * discount) / 100)
+                                  : (amount - discount).toDouble());
+                            } catch (err) {
+                              totalvalue = 0;
+                            }
+
+                            setState(() {
+                              subcatDetails[subCatIndex]["services"][index]["ttotal"] =
+                                  totalvalue.toString();
+
+                              // You can also update other properties of the object here
+                            });
+                          },
+                          dropdownMenuEntries: menuEntries,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // Discount TextField - now using Expanded to match price row width
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        height: 48,
+                        child: TextField(
+                          controller:
+                              subcatDetails[subCatIndex]["services"][index]["dcontroller"],
+                          onChanged: (value) {
+                            var data =
+                                subcatDetails[subCatIndex]["services"][index];
+
+                            subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                    .text =
+                                value;
+
+                            double totalvalue = 0;
+                            try {
+                              var amount = int.parse(
+                                subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                                    .text,
+                              );
+                              var discount = 0;
+                              try {
+                                discount = int.parse(
+                                  subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                      .text,
+                                );
+                              } catch (err) {
+                                discount = 0;
+                              }
+
+                              var types =
+                                  subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                              totalvalue = (types == "%"
+                                  ? (amount - (amount * discount) / 100)
+                                  : (amount - discount).toDouble());
+                            } catch (err) {
+                              totalvalue = 0;
+                            }
+
+                            setState(() {
+                              subcatDetails[subCatIndex]["services"][index]["ttotal"] =
+                                  totalvalue.toString();
+
+                              // You can also update other properties of the object here
+                            });
+
+                            // subcatDetails[subCatIndex]["services"][index]["tprice"] = value;
+                            // Perform actions with the updated 'value'
+                            print('Text changed: $value');
+                          },
+                          decoration: InputDecoration(
+                            hintText: "Discount",
+                            hintStyle: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                            isDense: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 12,
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 6),
+                Text(
+                  // ignore: prefer_interpolation_to_compose_strings
+                  "Total  ₹ " +
+                      subcatDetails[subCatIndex]["services"][index]["ttotal"],
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildServiceCard(Map service, Size size, int index) {
-    final priceController =
-        TextEditingController(text: service["price"].toString());
-    final discountPercentController =
-        TextEditingController(text: service["discountPercent"].toString());
-    final discountAmountController =
-        TextEditingController(text: service["discountAmount"].toString());
+    final priceController = TextEditingController(
+      text: service["price"].toString(),
+    );
+    final discountPercentController = TextEditingController(
+      text: service["discountPercent"].toString(),
+    );
+    final discountAmountController = TextEditingController(
+      text: service["discountAmount"].toString(),
+    );
 
     int calcTotal() {
       int price = int.tryParse(priceController.text) ?? 0;
@@ -253,9 +844,10 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 4,
-              offset: const Offset(1, 2))
+            color: Colors.grey.shade200,
+            blurRadius: 4,
+            offset: const Offset(1, 2),
+          ),
         ],
       ),
       child: Column(
@@ -269,7 +861,9 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   image: DecorationImage(
-                      image: AssetImage(service["image"]), fit: BoxFit.cover),
+                    image: AssetImage(service["image"]),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               SizedBox(width: size.width * 0.04),
@@ -317,8 +911,10 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                                 contentPadding: const EdgeInsets.all(10),
                               ),
                               onChanged: (_) => setState(() {
-                                service["discountPercent"] = int.tryParse(
-                                        discountPercentController.text) ??
+                                service["discountPercent"] =
+                                    int.tryParse(
+                                      discountPercentController.text,
+                                    ) ??
                                     0;
                               }),
                             ),
@@ -356,16 +952,24 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
           SizedBox(height: size.height * 0.01),
           Align(
             alignment: Alignment.centerLeft,
-            child: Text(service["name"],
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: size.width * 0.04)),
+            child: Text(
+              service["name"],
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: size.width * 0.04,
+              ),
+            ),
           ),
           SizedBox(height: size.height * 0.005),
           Align(
             alignment: Alignment.centerLeft,
-            child: Text("Total ₹ ${calcTotal()}",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: size.width * 0.045)),
+            child: Text(
+              "Total ₹ ${calcTotal()}",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: size.width * 0.045,
+              ),
+            ),
           ),
         ],
       ),

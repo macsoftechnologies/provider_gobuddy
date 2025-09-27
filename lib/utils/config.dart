@@ -240,6 +240,8 @@ static const ekycRouteName='ekyc verification screen';//DashboardPage
   static const supportRouteName='Support Screen';//SupportScreen CreatePackageScreen
   static const createPackageRouteName='Create Package Screen';//CreatePackageScreen
   static const technicianServicesPricesRouteName='Technician Services Prices Screen';
+  static const edittechnicianServicesPricesRouteName='Edit Technician Services Prices Screen';
+   static const changePriceRouteName='Change Price Screen';
 //TechnicianServicesPrices SummaryScreen
   static const planSummaryRouteName='Plan Summary screen Screen';//SummaryScreen
 }

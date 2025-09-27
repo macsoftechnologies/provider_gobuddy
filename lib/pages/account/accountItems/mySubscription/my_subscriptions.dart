@@ -318,10 +318,10 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8))),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ChangePricesScreen()),
-                    );
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(builder: (_) => ChangePricesScreen()),
+                    // );
                   },
                   child: const Text("Change Prices"),
                 ),
