@@ -18,7 +18,7 @@ class TechnicianServicesPrices extends StatefulWidget {
   const TechnicianServicesPrices({
     super.key,
     required this.categoryName,
-     required this.planName,
+    required this.planName,
     required this.planType,
   });
 
@@ -37,6 +37,19 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   dynamic subCat = "";
   bool isPackageSelected = false; // for Add button state
   int? selectedPackage; // selected package index
+  //sk start
+  // Add-ons state
+  bool _showProceedButton = true;
+  Map<String, TextEditingController> _addOnControllers = {};
+  List<Map<String, dynamic>> _addOnJobs = [
+    {"id": "1", "title": "Gas Refilling", "price": ""},
+    {"id": "2", "title": "Compressor Repair", "price": ""},
+    {"id": "3", "title": "PCB Board Repair", "price": ""},
+    {"id": "4", "title": "Coil Cleaning", "price": ""},
+    {"id": "5", "title": "Drain Pipe Replacement", "price": ""},
+    {"id": "6", "title": "Remote Repair", "price": ""},
+  ];
+  //sk end
 
   // Job Packages JSON
   final List<Map<String, dynamic>> jobPackages = [
@@ -53,7 +66,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   List<dynamic> subcatDetails = [];
   List<dynamic> serviceDetails = [];
   List<dynamic> packages = [];
-
+  List<dynamic> addonsData = [];
   dynamic userData = {};
 
   dynamic selectedPack = {};
@@ -203,8 +216,8 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                   services[j]["ttotal"] = "0.00";
                   services[j]["acontroller"] = TextEditingController(text: '');
                   services[j]["dcontroller"] = TextEditingController(text: '');
-                   services[j]["menuselect"] = list.first;
-                   services[j]["menuselectVal"] = "%";
+                  services[j]["menuselect"] = list.first;
+                  services[j]["menuselectVal"] = "%";
                 } catch (err) {}
 
                 // Set the boolean value
@@ -242,6 +255,46 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     }
   }
 
+  void callAddonsAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.catAddons, {
+        "category_id": widget.categoryName["categoryName"]["id"]! ?? "" ?? "1",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            for (int i = 0; i < parsed["addons"].length; i++) {
+              parsed["addons"][i]["amount"] = "";
+              parsed["addons"][i]["addonsAmount"] = TextEditingController(
+                text: '',
+              );
+            }
+
+            setState(() {
+              addonsData = parsed["addons"];
+            });
+          } else {
+            setState(() {
+              addonsData = [];
+            });
+            // ignore: use_build_context_synchronously
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -252,19 +305,25 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     }
 
     callgetSubCatAPI();
+    callAddonsAPI();
 
-    var data  = widget.planName;
+    var data = widget.planName;
 
     print(data);
 
-     setState(() {
-              selectedPack = widget.planName["packages"][0];
-            });
+    setState(() {
+      selectedPack = widget.planName["packages"][0];
+    });
 
-            setState(() {
-              packages = widget.planName["packages"]??[];
-            });
+    setState(() {
+      packages = widget.planName["packages"] ?? [];
+    });
     // callgetPlansAPI();
+
+    // Initialize controllers for add-ons sk
+    for (var job in _addOnJobs) {
+      _addOnControllers[job['id']] = TextEditingController();
+    }
   }
 
   // Sample JSON data for service cards
@@ -305,7 +364,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         left: 16,
                         top: 16,
                         right:
-                        16, // Added right constraint to ensure proper spacing
+                            16, // Added right constraint to ensure proper spacing
                         child: Row(
                           children: [
                             GestureDetector(
@@ -326,7 +385,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                   color: Colors.white,
                                 ),
                                 maxLines:
-                                2, // Allow text to wrap to second line if needed
+                                    2, // Allow text to wrap to second line if needed
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -411,9 +470,11 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
 
                                       if (amount.length > 0) {
                                         servicesData.add({
-                                          "service_id": services[j]["sid"],
+                                          "service_id": services[j]["id"],
                                           "price": amount,
                                           "discount": discount,
+                                          "type":services[j]["menuselect"]=="%"?"percentage":"amount"
+
                                         });
                                       }
                                       // services[j]["tprice"] = "";
@@ -442,7 +503,35 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                     "package": selectedPack["amount"],
                                     "services": servicesData,
                                   };
-                                  print(data);
+
+                                  
+                                  List<dynamic> addOnData = [];
+                                  try{
+                                  for (int a = 0; a < addonsData.length; a++) {
+                                    try {
+                                      var amountadd =
+                                          addonsData[a]["addonsAmount"].text;
+
+                                      if (amountadd.length>0) {
+                                        var dataAddon = {
+                                          "addon_id": addonsData[a]["id"],
+                                          "price": amountadd,
+                                        };
+                                        addOnData.add(dataAddon);
+                                      }
+                                    } catch (err) {
+                                      
+                                    }
+                                  }
+                                }catch(err){
+
+                                  
+
+                                }
+                                  print(addOnData);
+                                  if (addOnData.length > 0) {
+                                    data["addons"] = addOnData;
+                                  }
 
                                   callAddsubscriptionAPI(data);
                                 } else {
@@ -500,9 +589,10 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
 
                         // AC Type Selection
                         SizedBox(
-                          height: deviceHeight * 0.18, // Set a fixed height for the horizontal list
+                          height:
+                              deviceHeight *
+                              0.18, // Set a fixed height for the horizontal list
                           child: ListView.builder(
-
                             scrollDirection: Axis
                                 .horizontal, // Important: Set scroll direction to horizontal
                             itemCount: subcatDetails
@@ -517,10 +607,15 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                 },
                                 child: Container(
                                   width: deviceHeight * 0.14,
-                                  margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: isSelected ? Colors.green : Colors.transparent,
+                                      color: isSelected
+                                          ? Colors.green
+                                          : Colors.transparent,
                                       width: 2,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
@@ -533,7 +628,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                       ),
                                     ],
                                   ),
-                                  child:  Column(
+                                  child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       ClipRRect(
@@ -551,8 +646,12 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                          color: isSelected ? Colors.green : Colors.black87,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
+                                          color: isSelected
+                                              ? Colors.green
+                                              : Colors.black87,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -565,7 +664,39 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                           ),
                         ),
 
+                        //sk
+                        // Add this after the AC Type Selection section and before the "Enter your service price" text
+                        SizedBox(height: deviceHeight * 0.02),
 
+                        // Add-ons Button
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: OutlinedButton.icon(
+                            onPressed: _showAddOnsBottomSheet,
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.blue),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(
+                              Icons.add_circle_outline,
+                              color: Colors.blue,
+                            ),
+                            label: const Text(
+                              "Add-ons",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        //sk end
                         SizedBox(height: deviceHeight * 0.02),
 
                         const Text(
@@ -754,7 +885,6 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
     );
   }
 
-
   /// Back Button
   Widget _buildBackButton() {
     return Container(
@@ -771,6 +901,7 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
       ),
     );
   }
+
   Widget serviceCard(String title, String imageUrl, int? index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -809,13 +940,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                     Expanded(
                       child: TextField(
                         controller:
-                        subcatDetails[subCatIndex]["services"][index]["acontroller"],
+                            subcatDetails[subCatIndex]["services"][index]["acontroller"],
                         onChanged: (value) {
                           var data =
-                          subcatDetails[subCatIndex]["services"][index];
+                              subcatDetails[subCatIndex]["services"][index];
 
                           subcatDetails[subCatIndex]["services"][index]["acontroller"]
-                              .text =
+                                  .text =
                               value;
 
                           double? totalvalue = 0;
@@ -834,8 +965,11 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                               discount = 0;
                             }
 
-                            var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
-                            totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
+                            var types =
+                                subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                            totalvalue = (types == "%"
+                                ? (amount - (amount * discount) / 100)
+                                : (amount - discount).toDouble());
                           } catch (err) {
                             totalvalue = 0;
                           }
@@ -887,7 +1021,10 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         height: 48,
                         child: DropdownMenu<String>(
                           inputDecorationTheme: const InputDecorationTheme(
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 0,
+                            ),
                             constraints: BoxConstraints.tightFor(height: 48),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.all(
@@ -904,16 +1041,18 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                               ),
                             ),
                           ),
-                          initialSelection: subcatDetails[subCatIndex]["services"][index]["menuselect"],
+                          initialSelection:
+                              subcatDetails[subCatIndex]["services"][index]["menuselect"],
                           onSelected: (String? value) {
                             // This is called when the user selects an item.
                             setState(() {
-                              subcatDetails[subCatIndex]["services"][index]["menuselectVal"] = value;
+                              subcatDetails[subCatIndex]["services"][index]["menuselectVal"] =
+                                  value;
                               dropdownValue = value!;
                             });
 
                             var data =
-                            subcatDetails[subCatIndex]["services"][index];
+                                subcatDetails[subCatIndex]["services"][index];
 
                             // subcatDetails[subCatIndex]["services"][index]["dcontroller"]
                             //         .text =
@@ -935,8 +1074,11 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                 discount = 0;
                               }
 
-                              var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
-                              totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
+                              var types =
+                                  subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                              totalvalue = (types == "%"
+                                  ? (amount - (amount * discount) / 100)
+                                  : (amount - discount).toDouble());
                             } catch (err) {
                               totalvalue = 0;
                             }
@@ -961,13 +1103,13 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                         height: 48,
                         child: TextField(
                           controller:
-                          subcatDetails[subCatIndex]["services"][index]["dcontroller"],
+                              subcatDetails[subCatIndex]["services"][index]["dcontroller"],
                           onChanged: (value) {
                             var data =
-                            subcatDetails[subCatIndex]["services"][index];
+                                subcatDetails[subCatIndex]["services"][index];
 
                             subcatDetails[subCatIndex]["services"][index]["dcontroller"]
-                                .text =
+                                    .text =
                                 value;
 
                             double totalvalue = 0;
@@ -986,8 +1128,11 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                 discount = 0;
                               }
 
-                              var types  = subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
-                              totalvalue = (types == "%" ? (amount - (amount * discount) / 100): (amount -  discount).toDouble()) ;
+                              var types =
+                                  subcatDetails[subCatIndex]["services"][index]["menuselectVal"];
+                              totalvalue = (types == "%"
+                                  ? (amount - (amount * discount) / 100)
+                                  : (amount - discount).toDouble());
                             } catch (err) {
                               totalvalue = 0;
                             }
@@ -1129,4 +1274,168 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
       },
     );
   }
+
+  //sk
+  // Check if all add-ons have prices entered
+  void _checkAddOnsCompletion() {
+    bool allFilled = true;
+    for (var job in _addOnJobs) {
+      if (_addOnControllers[job['id']]?.text.isEmpty ?? true) {
+        allFilled = false;
+        break;
+      }
+    }
+    setState(() {
+      _showProceedButton = allFilled;
+    });
+  }
+
+  // Show Add-ons Bottom Sheet
+  void _showAddOnsBottomSheet() {
+    if (addonsData.isEmpty) {
+      UtilClass.showAlertDialog(
+        // ignore: use_build_context_synchronously
+        context: context,
+        message: "Addons Not Found",
+      );
+
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.6, // 60% device height
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Add-ons Jobs",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Enter prices for additional services",
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
+
+              // Add-ons List with inner scrolling
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: addonsData.length,
+                  itemBuilder: (context, index) {
+                    var job = addonsData[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              job['addon_service'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            width: 100,
+                            child: TextField(
+                              controller: addonsData[index]["addonsAmount"],
+
+                              onChanged: (value) {
+                                addonsData[index]["addonsAmount"].text = value;
+
+                                //      setState(() {
+                                //   addonsData[index]["services"][index]["ttotal"] =
+                                //       totalvalue.toString();
+
+                                //   // You can also update other properties of the object here
+                                // });
+                              },
+                              keyboardType: TextInputType.number,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}'),
+                                ),
+                              ],
+                              decoration: InputDecoration(
+                                hintText: "₹ 0",
+                                hintStyle: const TextStyle(fontSize: 13),
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Proceed Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _showProceedButton
+                      ? () {
+                          Navigator.pop(context);
+                          // Handle proceed action here
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _showProceedButton
+                        ? Colors.green
+                        : Colors.grey.shade300,
+                    minimumSize: const Size(double.infinity, 45),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    "Proceed",
+                    style: TextStyle(
+                      color: _showProceedButton ? Colors.white : Colors.black54,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  //sk end
 }

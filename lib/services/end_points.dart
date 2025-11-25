@@ -14,7 +14,11 @@ class EndPoints {
   static const String profile = "${newbaseUrl}profile";
   static const String updateProfile = "${newbaseUrl}update_profile";
   static const String tools = "${newbaseUrl}requesttools";
-  static const String catsubCat = "${newbaseUrl}categorybasedsub_category";
+  static const String catsubCat = "${newbaseUrl}categorybasedsubcategoryservices";
+ static const String catAddons = "${newbaseUrl}categorybasedaddons";
+
+
+  
   static const String servicesApi = "${newbaseUrl}services";
 
   static const String packagesApi = "${newbaseUrl}getjobspackage";

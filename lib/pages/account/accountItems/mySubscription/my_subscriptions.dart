@@ -323,7 +323,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                     //   MaterialPageRoute(builder: (_) => ChangePricesScreen()),
                     // );
                   },
-                  child: const Text("Change Prices"),
+                  child: const Text("Change Prices**"),
                 ),
               SizedBox(width: size.width * 0.03),
               ElevatedButton(

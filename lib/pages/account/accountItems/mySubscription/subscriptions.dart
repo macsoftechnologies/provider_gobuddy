@@ -167,7 +167,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                   CustomBackButton(),
                   SizedBox(width: size.width * 0.03),
                   Text(
-                    "My Subscriptions",
+                    "My Subscriptions**",
                     style: TextStyle(
                         fontSize: size.width * 0.05,
                         fontWeight: FontWeight.bold,

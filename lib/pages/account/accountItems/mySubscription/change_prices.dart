@@ -70,6 +70,7 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
 
   late Map<String, dynamic> subscriptionData = [] as Map<String, dynamic>;
   int selectedCategory = 0;
+  bool _showProceedButton = true;
 
   double deviceHeight = 0;
   double deviceWidth = 0;
@@ -93,6 +94,7 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
   List<dynamic> subcatDetails = [];
   List<dynamic> serviceDetails = [];
   List<dynamic> packages = [];
+  List<dynamic> addonsData = [];
 
   dynamic userData = {};
 
@@ -237,22 +239,63 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
             dynamic existServices = widget.subscriptiondetails["services"];
             for (int i = 0; i < parsed["sub_category"].length; i++) {
               var services = parsed["sub_category"][i]["services"];
-              for (int j = 0; j < parsed["sub_category"].length; j++) {
+              for (int j = 0; j < services.length; j++) {
                 try {
                   List<dynamic> filteredObjects = existServices
-                      .where((obj) => obj["service_id"] ==  services[j]["service_id"])
+                      .where((obj) => obj["service_id"] == services[j]["id"])
                       .toList();
 
-                      print(filteredObjects);
-                } catch (err) {}
-                try {
-                  services[j]["tprice"] = "";
-                  services[j]["tdiscount"] = "";
-                  services[j]["ttotal"] = "10.00";
-                  services[j]["acontroller"] = TextEditingController(text: '');
-                  services[j]["dcontroller"] = TextEditingController(text: '');
-                  services[j]["menuselect"] = list.first;
-                  services[j]["menuselectVal"] = "%";
+                  print(filteredObjects);
+                  if (filteredObjects.length > 0) {
+                    try {
+                      var serverPrice = filteredObjects[0]["price"];
+                      var serverDiscount = filteredObjects[0]["discount"];
+                      var typemode = filteredObjects[0]["type"] == "percentage"
+                          ? "%"
+                          : "₹";
+
+                      services[j]["tprice"] = serverPrice;
+                      services[j]["tdiscount"] = serverDiscount;
+
+                      double totalvalue = 0;
+                      int amount = 0;
+                      int discount = 0;
+                      try {
+                        amount = double.parse(serverPrice).toInt();
+                      } catch (err) {}
+                      try {
+                        discount = double.parse(serverDiscount).toInt();
+                      } catch (err) {}
+
+                      totalvalue = typemode == "%"
+                          ? (amount - (amount * discount) / 100)
+                          : (amount - discount).toDouble();
+
+                      services[j]["ttotal"] = totalvalue.toString();
+                      services[j]["acontroller"] = TextEditingController(
+                        text: filteredObjects[0]["price"],
+                      );
+                      services[j]["dcontroller"] = TextEditingController(
+                        text: filteredObjects[0]["discount"],
+                      );
+                      services[j]["menuselect"] = typemode;
+                      services[j]["menuselectVal"] = typemode;
+                    } catch (err) {}
+                  } else {
+                    try {
+                      services[j]["tprice"] = "";
+                      services[j]["tdiscount"] = "";
+                      services[j]["ttotal"] = "10.00";
+                      services[j]["acontroller"] = TextEditingController(
+                        text: '',
+                      );
+                      services[j]["dcontroller"] = TextEditingController(
+                        text: '',
+                      );
+                      services[j]["menuselect"] = list.first;
+                      services[j]["menuselectVal"] = "%";
+                    } catch (err) {}
+                  }
                 } catch (err) {}
 
                 // Set the boolean value
@@ -290,6 +333,66 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
     }
   }
 
+  void callAddonsAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.catAddons, {
+        "category_id": widget.subscriptiondetails["category_id"]! ?? "" ?? "1",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+
+          dynamic existOrders = widget.subscriptiondetails["addons"];
+
+          if (parsed["status"] == "valid") {
+            for (int i = 0; i < parsed["addons"].length; i++) {
+              try {
+                List<dynamic> filteredObjects = existOrders
+                    .where((obj) => obj["addon_id"] == parsed["addons"][i]["id"])
+                    .toList();
+
+                print(filteredObjects);
+
+                if (filteredObjects.length > 0) {
+
+                  var addOnPrice = filteredObjects[0]["amount"];
+                  parsed["addons"][i]["amount"] = addOnPrice;
+                  parsed["addons"][i]["addonsAmount"] = TextEditingController(
+                    text: addOnPrice,
+                  );
+                } else {
+                  parsed["addons"][i]["amount"] = "";
+                  parsed["addons"][i]["addonsAmount"] = TextEditingController(
+                    text: '',
+                  );
+                }
+              } catch (err) {}
+            }
+
+            setState(() {
+              addonsData = parsed["addons"];
+            });
+          } else {
+            setState(() {
+              addonsData = [];
+            });
+            // ignore: use_build_context_synchronously
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -304,7 +407,7 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
     print(details);
 
     callgetSubCatAPI();
-
+    callAddonsAPI();
     // var data = widget.planName;
 
     // setState(() {
@@ -467,7 +570,49 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                       ),
                     ),
 
-                    SizedBox(height: size.height * 0.015),
+                    //sk
+                    // Add this after the AC Type Selection section and before the "Enter your service price" text
+                    SizedBox(height: deviceHeight * 0.02),
+
+                    // Add-ons Button
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: OutlinedButton.icon(
+                        onPressed: _showAddOnsBottomSheet,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.blue),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        icon: const Icon(
+                          Icons.add_circle_outline,
+                          color: Colors.blue,
+                        ),
+                        label: const Text(
+                          "Add-ons",
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    //sk end
+                    SizedBox(height: deviceHeight * 0.02),
+
+                    const Text(
+                      "Enter your service price and discount",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    SizedBox(height: deviceHeight * 0.01),
 
                     // Service List
                     Column(
@@ -506,7 +651,10 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                     ),
                     onPressed: () {
                       debugPrint(
-                        "Updated Data: ${json.encode(subscriptionData)}",
+                        "serv Data: ${json.encode(serviceDetails)}",
+                      );
+                      debugPrint(
+                        "add Data: ${json.encode(addonsData)}",
                       );
                     },
                     child: Text(
@@ -575,16 +723,16 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
 
                           double? totalvalue = 0;
                           try {
-                            var amount = int.parse(
+                            var amount = double.parse(
                               subcatDetails[subCatIndex]["services"][index]["acontroller"]
                                   .text,
-                            );
+                            ).toInt();
                             var discount = 0;
                             try {
-                              discount = int.parse(
+                              discount = double.parse(
                                 subcatDetails[subCatIndex]["services"][index]["dcontroller"]
                                     .text,
-                              );
+                              ).toInt();
                             } catch (err) {
                               discount = 0;
                             }
@@ -684,16 +832,24 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
 
                             double totalvalue = 0;
                             try {
-                              var amount = int.parse(
+                              // var amount = int.parse(
+                              //   subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                              //       .text,
+                              // );
+                              var amount = double.parse(
                                 subcatDetails[subCatIndex]["services"][index]["acontroller"]
                                     .text,
-                              );
+                              ).toInt();
                               var discount = 0;
                               try {
-                                discount = int.parse(
+                                discount = double.parse(
                                   subcatDetails[subCatIndex]["services"][index]["dcontroller"]
                                       .text,
-                                );
+                                ).toInt();
+                                // discount = int.parse(
+                                //   subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                //       .text,
+                                // );
                               } catch (err) {
                                 discount = 0;
                               }
@@ -738,16 +894,24 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
 
                             double totalvalue = 0;
                             try {
-                              var amount = int.parse(
+                              // var amount = int.parse(
+                              //   subcatDetails[subCatIndex]["services"][index]["acontroller"]
+                              //       .text,
+                              // );
+                              var amount = double.parse(
                                 subcatDetails[subCatIndex]["services"][index]["acontroller"]
                                     .text,
-                              );
+                              ).toInt();
                               var discount = 0;
                               try {
-                                discount = int.parse(
+                                // discount = int.parse(
+                                //   subcatDetails[subCatIndex]["services"][index]["dcontroller"]
+                                //       .text,
+                                // );
+                                discount = double.parse(
                                   subcatDetails[subCatIndex]["services"][index]["dcontroller"]
                                       .text,
-                                );
+                                ).toInt();
                               } catch (err) {
                                 discount = 0;
                               }
@@ -973,6 +1137,153 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // Show Add-ons Bottom Sheet
+  void _showAddOnsBottomSheet() {
+    if (addonsData.isEmpty) {
+      UtilClass.showAlertDialog(
+        // ignore: use_build_context_synchronously
+        context: context,
+        message: "Addons Not Found",
+      );
+
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.6, // 60% device height
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Add-ons Jobs",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Enter prices for additional services",
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
+
+              // Add-ons List with inner scrolling
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: addonsData.length,
+                  itemBuilder: (context, index) {
+                    var job = addonsData[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              job['addon_service'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            width: 100,
+                            child: TextField(
+                              controller: addonsData[index]["addonsAmount"],
+
+                              onChanged: (value) {
+                                addonsData[index]["addonsAmount"].text = value;
+
+                                //      setState(() {
+                                //   addonsData[index]["services"][index]["ttotal"] =
+                                //       totalvalue.toString();
+
+                                //   // You can also update other properties of the object here
+                                // });
+                              },
+                              keyboardType: TextInputType.number,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}'),
+                                ),
+                              ],
+                              decoration: InputDecoration(
+                                hintText: "₹ 0",
+                                hintStyle: const TextStyle(fontSize: 13),
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Proceed Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _showProceedButton
+                      ? () {
+                          Navigator.pop(context);
+                          // Handle proceed action here
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _showProceedButton
+                        ? Colors.green
+                        : Colors.grey.shade300,
+                    minimumSize: const Size(double.infinity, 45),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    "Proceed",
+                    style: TextStyle(
+                      color: _showProceedButton ? Colors.white : Colors.black54,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
     );
   }
 }
