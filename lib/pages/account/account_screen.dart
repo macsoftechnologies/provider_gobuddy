@@ -28,35 +28,38 @@ class AccountPage extends StatefulWidget {
 class _AccountPageState extends State<AccountPage> {
   // A reusable builder for the list tiles
   dynamic profileDetails = {};
-  dynamic userData= {};
-   @override
+  dynamic userData = {};
+  dynamic subscriptionCount = 0;
+  @override
   void initState() {
     super.initState();
 
-     var userDataValue = Preferences.getUserDetails();
-      if (userDataValue != null) {
+    var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
       userData = json.decode(userDataValue);
     }
     callgetProfileAPI();
   }
-   void callgetProfileAPI() async {
+
+  void callgetProfileAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.profile, {
-         "user_id": userData["user_id"] ?? "4361",
+        "user_id": userData["user_id"] ?? "4361",
       }).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = {};
         try {
           parsed = await json.decode(value);
           if (parsed["status"] == "valid") {
-             setState(() {
+            setState(() {
+              subscriptionCount = parsed["subscription_count"];
+            });
+            setState(() {
               profileDetails = parsed["profile"];
             });
-
-          
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -76,8 +79,12 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
-  Widget _buildListTile(IconData icon, String title,
-      {Color color = Colors.black, VoidCallback? onTap}) {
+  Widget _buildListTile(
+    IconData icon,
+    String title, {
+    Color color = Colors.black,
+    VoidCallback? onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -90,7 +97,10 @@ class _AccountPageState extends State<AccountPage> {
               child: Text(
                 title,
                 style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w500, color: color),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
               ),
             ),
             const Icon(Icons.chevron_right, color: Colors.black54),
@@ -142,8 +152,9 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                   // User Profile Card
                   Padding(
-                    padding:
-                    EdgeInsets.symmetric(horizontal: deviceWidth * 0.05),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: deviceWidth * 0.05,
+                    ),
                     child: Container(
                       padding: EdgeInsets.all(cardPadding),
                       decoration: BoxDecoration(
@@ -168,7 +179,9 @@ class _AccountPageState extends State<AccountPage> {
                                 children: [
                                   CircleAvatar(
                                     radius: deviceWidth * 0.08,
-                                    backgroundImage: AssetImage('assets/images/user.jpg'),
+                                    backgroundImage: AssetImage(
+                                      'assets/images/user.jpg',
+                                    ),
                                   ),
                                   Positioned(
                                     bottom: 0,
@@ -195,7 +208,7 @@ class _AccountPageState extends State<AccountPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                       profileDetails["name"]??"",
+                                      profileDetails["name"] ?? "",
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -234,15 +247,20 @@ class _AccountPageState extends State<AccountPage> {
                                   color: Colors.grey,
                                 ),
                               ),
-                              SizedBox(width: 10,),
+                              SizedBox(width: 10),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white, // 👈 White background
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: Color(0xFFFFD050), // 👈 Yellow border
-                                    width: 1,             // Border thickness
+                                    color: Color(
+                                      0xFFFFD050,
+                                    ), // 👈 Yellow border
+                                    width: 1, // Border thickness
                                   ),
                                 ),
                                 child: Row(
@@ -262,8 +280,7 @@ class _AccountPageState extends State<AccountPage> {
                                     ),
                                   ],
                                 ),
-                              )
-
+                              ),
                             ],
                           ),
                         ],
@@ -273,111 +290,129 @@ class _AccountPageState extends State<AccountPage> {
                   // Menu options
                   SizedBox(height: deviceHeight * 0.02),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                  _buildListTile(Icons.person_outline, "View Profile",
-                      onTap: () {
-                         Navigator.pushNamed(
-                        context,
-                        Config.viewProfileRouteName,
-                        );
-                      }),
+                  _buildListTile(
+                    Icons.person_outline,
+                    "View Profile",
+                    onTap: () {
+                      Navigator.pushNamed(context, Config.viewProfileRouteName);
+                    },
+                  ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
                   _buildListTile(
-                      Icons.subscriptions_outlined, "My Subscriptions",
-                      onTap: () {
+                    Icons.subscriptions_outlined,
+                    "My Subscriptions",
+                    onTap: () {
+                      if (subscriptionCount > 0) {
                         Navigator.pushNamed(
                           context,
                           Config.mySubscriptionsRouteName,
                         );
-                      }),
+                      } else {
+
+
+                        
+                      }
+                    },
+                  ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
                   _buildListTile(
-                      Icons.description_outlined, "Terms & Conditions",
-                      onTap: () {
-                        // Handle tap
-                        Navigator.pushNamed(
-                          context,
-                          Config.termsConditionsRouteName,
-                          //notificationsRouteName
-                        );
-                      }),
+                    Icons.description_outlined,
+                    "Terms & Conditions",
+                    onTap: () {
+                      // Handle tap
+                      Navigator.pushNamed(
+                        context,
+                        Config.termsConditionsRouteName,
+                        //notificationsRouteName
+                      );
+                    },
+                  ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                  _buildListTile(Icons.shield_outlined, "Privacy & Policy",
-                      onTap: () {
-                        // Handle tap
-                        Navigator.pushNamed(
-                          context,
-                          Config.privacyPolicyRouteName, //customerReviewsRouteName
-                        );
-                      }),
+                  _buildListTile(
+                    Icons.shield_outlined,
+                    "Privacy & Policy",
+                    onTap: () {
+                      // Handle tap
+                      Navigator.pushNamed(
+                        context,
+                        Config
+                            .privacyPolicyRouteName, //customerReviewsRouteName
+                      );
+                    },
+                  ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                  _buildListTile(Icons.support_agent_outlined, "Support",
-                      onTap: () {
-                        // Handle tap
-                        Navigator.pushNamed(
-                          context,
-                          Config.supportRouteName, //showQRCodeRouteName
-                        );
-                      }),
+                  _buildListTile(
+                    Icons.support_agent_outlined,
+                    "Support",
+                    onTap: () {
+                      // Handle tap
+                      Navigator.pushNamed(
+                        context,
+                        Config.supportRouteName, //showQRCodeRouteName
+                      );
+                    },
+                  ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                  _buildListTile(Icons.emoji_events_outlined, "Refer & Earn",
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          Config.referEarnRouteName,
-                        );
-                      }),
+                  _buildListTile(
+                    Icons.emoji_events_outlined,
+                    "Refer & Earn",
+                    onTap: () {
+                      Navigator.pushNamed(context, Config.referEarnRouteName);
+                    },
+                  ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                  _buildListTile(Icons.handyman_outlined, "Request Tool",
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          Config.requestToolRouteName,
-                        );
-                      }),
+                  _buildListTile(
+                    Icons.handyman_outlined,
+                    "Request Tool",
+                    onTap: () {
+                      Navigator.pushNamed(context, Config.requestToolRouteName);
+                    },
+                  ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                  _buildListTile(Icons.logout, "Logout", color: Colors.red,
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text("Confirm Logout"),
-                              content:
-                              const Text("Are you sure you want to logout?"),
-                              actions: [
-                                TextButton(
-                                  child: const Text("No"),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                                TextButton(
-                                  child: const Text("Yes"),
-                                  onPressed: () {
-                                    // Navigator.of(context).pushReplacementNamed(
-                                    //   Config.loginRouteName,);
+                  _buildListTile(
+                    Icons.logout,
+                    "Logout",
+                    color: Colors.red,
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text("Confirm Logout"),
+                            content: const Text(
+                              "Are you sure you want to logout?",
+                            ),
+                            actions: [
+                              TextButton(
+                                child: const Text("No"),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                              TextButton(
+                                child: const Text("Yes"),
+                                onPressed: () {
+                                  // Navigator.of(context).pushReplacementNamed(
+                                  //   Config.loginRouteName,);
 
+                                  Preferences.initSharedPreference();
 
- Preferences.initSharedPreference();
+                                  Preferences.clearPreference();
 
-      Preferences.clearPreference();
-
-      Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-          (Route route) => false);
-
-
-
-
-
-
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }),
+                                  Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                      builder: (context) => LoginScreen(),
+                                    ),
+                                    (Route route) => false,
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
                 ],
               ),
@@ -385,7 +420,6 @@ class _AccountPageState extends State<AccountPage> {
           ),
         ],
       ),
-
     );
   }
 }
