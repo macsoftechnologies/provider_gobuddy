@@ -100,13 +100,13 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
 
   dynamic selectedPack = {};
 
-  void callAddsubscriptionAPI(dynamic data) async {
+  void callUpdatesubscriptionAPI(dynamic data) async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiServiceWithJson(
-        EndPoints.addprovSubscriptionApi,
+        EndPoints.upadteprovSubscriptionApi,
         data,
       ).then((value) async {
         UtilClass.hideProgress();
@@ -120,7 +120,7 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
               message: parsed["message"],
             );
 
-            Navigator.pushNamed(context, Config.planSummaryRouteName);
+            
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -352,13 +352,14 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
             for (int i = 0; i < parsed["addons"].length; i++) {
               try {
                 List<dynamic> filteredObjects = existOrders
-                    .where((obj) => obj["addon_id"] == parsed["addons"][i]["id"])
+                    .where(
+                      (obj) => obj["addon_id"] == parsed["addons"][i]["id"],
+                    )
                     .toList();
 
                 print(filteredObjects);
 
                 if (filteredObjects.length > 0) {
-
                   var addOnPrice = filteredObjects[0]["amount"];
                   parsed["addons"][i]["amount"] = addOnPrice;
                   parsed["addons"][i]["addonsAmount"] = TextEditingController(
@@ -650,12 +651,94 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                       ),
                     ),
                     onPressed: () {
-                      debugPrint(
-                        "serv Data: ${json.encode(serviceDetails)}",
-                      );
-                      debugPrint(
-                        "add Data: ${json.encode(addonsData)}",
-                      );
+                      List<dynamic> servicesData = [];
+                      List<dynamic> copiedList = [...subcatDetails];
+                      for (int i = 0; i < copiedList.length; i++) {
+                        var services = copiedList[i]["services"];
+                        for (int j = 0; j < services.length; j++) {
+                          try {
+                            var amount = services[j]["acontroller"].text;
+                            var discount = services[j]["dcontroller"].text;
+
+                            if (amount.length > 0) {
+                              servicesData.add({
+                                "service_id": services[j]["id"],
+                                "price": amount,
+                                "discount": discount,
+                                "type": services[j]["menuselect"] == "%"
+                                    ? "percentage"
+                                    : "amount",
+                              });
+                            }
+                            // services[j]["tprice"] = "";
+                            // services[j]["tdiscount"] = "";
+                            // services[j]["ttotal"] = "0.00";
+                            // services[j]["acontroller"] =
+                            //     TextEditingController(text: '');
+                            // services[j]["dcontroller"] =
+                            //     TextEditingController(text: '');
+                          } catch (err) {}
+
+                          // Set the boolean value
+                        }
+                      }
+
+                      print(servicesData);
+
+                      if (servicesData.length > 0) {
+                        var data = {
+                          "subscription_id":
+                              widget.subscriptiondetails["subscription_id"],
+                          "provider_id": userData["user_id"],
+                          "category_id":
+                              widget.subscriptiondetails["category_id"],
+                          "sub_category_id": subCat,
+                          "subscription":
+                              widget.subscriptiondetails["subscription"],
+                          "jobs":  widget.subscriptiondetails["jobs"],
+                          "package":  widget.subscriptiondetails["package"],
+                          "services": servicesData,
+                        };
+
+                        List<dynamic> addOnData = [];
+                        try {
+                          for (int a = 0; a < addonsData.length; a++) {
+                            try {
+                              var amountadd =
+                                  addonsData[a]["addonsAmount"].text;
+
+                              if (amountadd.length > 0) {
+                                var dataAddon = {
+                                  "addon_id": addonsData[a]["id"],
+                                  "price": amountadd,
+                                };
+                                addOnData.add(dataAddon);
+                              }
+                            } catch (err) {}
+                          }
+                        } catch (err) {}
+                        print(addOnData);
+                        if (addOnData.length > 0) {
+                          data["addons"] = addOnData;
+                        }
+
+                        callUpdatesubscriptionAPI(data);
+                      } else {
+                        UtilClass.showAlertDialog(
+                          // ignore: use_build_context_synchronously
+                          context: context,
+                          message: "please add any one of the service",
+                        );
+                      }
+
+                      print("cesData");
+
+                      // debugPrint(
+                      //   "serv Data: ${json.encode(subcatDetails)}",
+                      // );
+                      // debugPrint(
+                      //   "add Data: ${json.encode(addonsData)}",
+                      // );
                     },
                     child: Text(
                       "Update Prices",

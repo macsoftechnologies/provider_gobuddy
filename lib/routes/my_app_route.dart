@@ -75,7 +75,7 @@ class MyAppRouteState extends State<MyAppRoute> {
 
         Config.accountRouteName: (ctx) =>  AccountPage(),
         Config.viewProfileRouteName: (ctx) =>  ViewProfilePage(),
-        Config.mySubscriptionsRouteName: (ctx) =>  SubscriptionScreen(),
+        // Config.mySubscriptionsRouteName: (ctx) =>  SubscriptionScreen(),
         Config.referEarnRouteName: (ctx) =>  ReferAndEarnPage(), //requestToolRouteName
         Config.requestToolRouteName: (ctx) =>  RequestToolScreen(),
         //Config.myOrdersRouteName: (ctx) =>  MyOrdersScreen(),
@@ -107,6 +107,16 @@ class MyAppRouteState extends State<MyAppRoute> {
               phoneNumber: args['phone'] ?? '',
               fromScreen: args['fromScreen'] ?? '',
               userid:args['user_id'] ?? '4361',
+            ),
+          );
+        }
+
+         if (settings.name == Config.mySubscriptionsRouteName) {
+          final args = settings.arguments as Map<String, dynamic>;
+         
+          return MaterialPageRoute(
+            builder: (_) => SubscriptionScreen(
+              issubscription: args['issubscription'] ?? false
             ),
           );
         }

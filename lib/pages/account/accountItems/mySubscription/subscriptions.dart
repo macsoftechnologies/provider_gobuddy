@@ -15,7 +15,22 @@ import 'package:gobuddy/utils/util_class.dart';
 bool hasSubscriptions = true; // Set this based on your actual data
 
 class SubscriptionScreen extends StatefulWidget {
-  const SubscriptionScreen({super.key});
+
+
+ final bool issubscription;
+
+  const SubscriptionScreen({
+    super.key,
+    required this.issubscription,
+    
+  });
+
+
+
+
+
+
+
 
   @override
   State<SubscriptionScreen> createState() => _SubscriptionScreenState();
@@ -24,7 +39,7 @@ class SubscriptionScreen extends StatefulWidget {
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   @override
   Widget build(BuildContext context) {
-    return hasSubscriptions
+    return widget.issubscription
         ? MySubscriptionsScreen()
         : CreateSubscriptionScreen();
   }
@@ -101,6 +116,8 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
     super.initState();
     final data = json.decode(subscriptionJson);
      subscriptions = data["subscriptions"];
+
+    
 
      var userDataValue = Preferences.getUserDetails();
       if (userDataValue != null) {

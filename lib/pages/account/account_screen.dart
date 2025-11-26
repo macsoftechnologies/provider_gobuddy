@@ -306,11 +306,14 @@ class _AccountPageState extends State<AccountPage> {
                         Navigator.pushNamed(
                           context,
                           Config.mySubscriptionsRouteName,
+                          arguments: {"issubscription": true},
                         );
                       } else {
-
-
-                        
+                        Navigator.pushNamed(
+                          context,
+                          Config.mySubscriptionsRouteName,
+                          arguments: {"issubscription": false},
+                        );
                       }
                     },
                   ),
