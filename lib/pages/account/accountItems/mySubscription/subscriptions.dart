@@ -10,27 +10,14 @@ import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
 import 'package:gobuddy/utils/config.dart';
 import 'package:gobuddy/utils/util_class.dart';
-
+import 'package:gobuddy/components/bottom_sheet_utils.dart';
 // Global variable to track if there are active or expired subscriptions
 bool hasSubscriptions = true; // Set this based on your actual data
 
 class SubscriptionScreen extends StatefulWidget {
+  final bool issubscription;
 
-
- final bool issubscription;
-
-  const SubscriptionScreen({
-    super.key,
-    required this.issubscription,
-    
-  });
-
-
-
-
-
-
-
+  const SubscriptionScreen({super.key, required this.issubscription});
 
   @override
   State<SubscriptionScreen> createState() => _SubscriptionScreenState();
@@ -57,45 +44,29 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   final String subscriptionJson = '''
   {
     "subscriptions": [
-      {
-        "category": "AC Technician",
-        "subscription": "Basic Plan",
-        "jobs": 20,
-        "used": 10,
-        "missed": 0,
-        "remaining": 10,
-        "package": 999,
-        "status_text": "active",
-        "subscribedOn": "12/03/2025",
-        "index":0
-      },
-      {
-        "category": "Plumbing",
-        "subscription": "Basic Plan",
-        "jobs": 20,
-        "used": 15,
-        "missed": 5,
-        "remaining": 0,
-        "package": 700,
-        "status_text": "Expired",
-        "subscribedOn": "10/04/2024",
-        "index":1
-      },
-      {
-        "category": "Plumbing",
-        "subscription": "Basic Plan",
-        "jobs": 20,
-        "used": 15,
-        "missed": 5,
-        "remaining": 0,
-        "package": 700,
-        "status_text": "active",
-        "subscribedOn": "10/04/2024",
-        "index":2
-      }
+      
     ]
   }
   ''';
+
+
+  final List<Map<String, dynamic>> jobPlansJson = [
+  {
+    "plan_id": "1",
+    "plan": "Basic Plan",
+    "packages": [
+      {"id": "1", "jobs": "20", "amount": "999.00"},
+      {"id": "2", "jobs": "40", "amount": "1499.00"}
+    ]
+  },
+  {
+    "plan_id": "2",
+    "plan": "Advanced Plan",
+    "packages": [
+      {"id": "3", "jobs": "60", "amount": "2399.00"},
+    ]
+  }
+];
 
   bool isPackageSelected = false; // for Add button state
   int? selectedPackage; // selected package index
@@ -107,27 +78,71 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
     {"jobs": 60, "price": 2399},
   ];
 
-  late List subscriptions;
+  // late List subscriptions;
+  List<dynamic> subscriptions = [];
   int selectedIndex = 0; // Default tab selected
-    dynamic subscriptionsDetails = [];
-  dynamic userData= {};
+  dynamic subscriptionsDetails = [];
+  dynamic userData = {};
+  dynamic subscription ;
+   List<dynamic> addonsData = [];
+ List<dynamic>  packages = [];
+
+  dynamic selectedPack = {};
   @override
   void initState() {
     super.initState();
-    final data = json.decode(subscriptionJson);
-     subscriptions = data["subscriptions"];
+    // final data = json.decode(subscriptionJson);
+    // subscriptions = data["subscriptions"];
 
-    
-
-     var userDataValue = Preferences.getUserDetails();
-      if (userDataValue != null) {
+    var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
       userData = json.decode(userDataValue);
     }
     callgetSubscriptionsAPI();
+    callgetPlansAPI();
+  }
+  void callgetPlansAPI() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.packagesApi, {
+        "sub_category_id": "27",
+      }).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed =value;
+          if (parsed["status"] == "valid") {
+            packages = parsed["plans"];
+
+            setState(() {
+              selectedPack = parsed["plans"][0];
+            });
+
+            setState(() {
+              packages = parsed["plans"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
-
-   void callgetSubscriptionsAPI() async {
+  void callgetSubscriptionsAPI() async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
@@ -142,10 +157,11 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
           if (parsed["status"] == "valid") {
             subscriptions = parsed["data"];
 
-
             setState(() {
               subscriptions = parsed["data"];
             });
+
+             subscription = subscriptions[selectedIndex];
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -168,7 +184,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final subscription = subscriptions[selectedIndex];
+    
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -184,11 +200,12 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                   CustomBackButton(),
                   SizedBox(width: size.width * 0.03),
                   Text(
-                    "My Subscriptions**",
+                    "My Subscriptions",
                     style: TextStyle(
-                        fontSize: size.width * 0.05,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87),
+                      fontSize: size.width * 0.05,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                 ],
               ),
@@ -203,31 +220,37 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                     context,
                     Config.createPackageRouteName,
                   );
-
                 },
                 child: Container(
                   padding: EdgeInsets.symmetric(
-                      horizontal: size.width * 0.04,
-                      vertical: size.height * 0.015),
+                    horizontal: size.width * 0.04,
+                    vertical: size.height * 0.015,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.grey.shade100,
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.grey.shade300,
-                          blurRadius: 5,
-                          offset: const Offset(1, 2))
+                        color: Colors.grey.shade300,
+                        blurRadius: 5,
+                        offset: const Offset(1, 2),
+                      ),
                     ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Create New Subscription Package",
-                          style: TextStyle(fontSize: size.width * 0.04)),
+                      Text(
+                        "Create New Subscription Package",
+                        style: TextStyle(fontSize: size.width * 0.04),
+                      ),
                       CircleAvatar(
                         backgroundColor: Colors.white,
-                        child: Icon(Icons.add,
-                            color: Colors.green, size: size.width * 0.06),
+                        child: Icon(
+                          Icons.add,
+                          color: Colors.green,
+                          size: size.width * 0.06,
+                        ),
                       ),
                     ],
                   ),
@@ -237,23 +260,28 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
 
               // Tabs
               SizedBox(
-  height: 50, // Adjust the height as needed
-  child: SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      children: subscriptions.asMap().entries.map((entry) {
-        int index = entry.key;
-        dynamic item = entry.value;
-        return _buildTab(item["category"], index, item["category"], size);
-      }).toList(),
-    ),
-  ),
-),
+                height: 50, // Adjust the height as needed
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: subscriptions.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      dynamic item = entry.value;
+                      return _buildTab(
+                        item["category"],
+                        index,
+                        item["category"],
+                        size,
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
 
               SizedBox(height: size.height * 0.02),
 
               // Subscription Card
-              _buildSubscriptionCard(subscription, size),
+             subscription != null ? _buildSubscriptionCard(subscription, size): SizedBox(),
             ],
           ),
         ),
@@ -271,7 +299,9 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
       },
       child: Container(
         padding: EdgeInsets.symmetric(
-            horizontal: size.width * 0.05, vertical: size.height * 0.012),
+          horizontal: size.width * 0.05,
+          vertical: size.height * 0.012,
+        ),
         decoration: BoxDecoration(
           color: isActive ? Colors.green : Colors.white,
           borderRadius: BorderRadius.circular(30),
@@ -280,8 +310,9 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
         child: Text(
           label,
           style: TextStyle(
-              color: isActive ? Colors.white : Colors.black87,
-              fontSize: size.width * 0.04),
+            color: isActive ? Colors.white : Colors.black87,
+            fontSize: size.width * 0.04,
+          ),
         ),
       ),
     );
@@ -299,9 +330,10 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.shade300,
-              blurRadius: 5,
-              offset: const Offset(1, 2))
+            color: Colors.grey.shade300,
+            blurRadius: 5,
+            offset: const Offset(1, 2),
+          ),
         ],
       ),
       child: Column(
@@ -311,17 +343,21 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("${subscription["category"]}\n${subscription["subscription"]}",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: size.width * 0.045)),
+              Text(
+                "${subscription["category"]}\n${subscription["subscription"]}",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: size.width * 0.045,
+                ),
+              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
                     padding: EdgeInsets.symmetric(
-                        horizontal: size.width * 0.03,
-                        vertical: size.height * 0.005),
+                      horizontal: size.width * 0.03,
+                      vertical: size.height * 0.005,
+                    ),
                     decoration: BoxDecoration(
                       color: isActive
                           ? Colors.green.shade100
@@ -338,10 +374,13 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                     ),
                   ),
                   SizedBox(height: size.height * 0.01),
-                  Text("₹ ${subscription["package"]}",
-                      style: TextStyle(
-                          fontSize: size.width * 0.05,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    "₹ ${subscription["package"]}",
+                    style: TextStyle(
+                      fontSize: size.width * 0.05,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -353,22 +392,33 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildJobInfo(
-                  "Total Jobs", subscription["jobs"].toString(), size),
+                "Total Jobs",
+                subscription["jobs"].toString(),
+                size,
+              ),
               _buildJobInfo("Used", subscription["used"].toString(), size),
               _buildJobInfo("Missed", subscription["missed"].toString(), size),
               _buildJobInfo(
-                  "Remaining", subscription["remaining"].toString(), size),
+                "Remaining",
+                subscription["remaining"].toString(),
+                size,
+              ),
             ],
           ),
           Divider(height: size.height * 0.03, thickness: 1),
 
           // Subscribed Date
-          Text("Subscribed on",
-              style:
-              TextStyle(color: Colors.grey, fontSize: size.width * 0.035)),
-          Text(subscription["subscribedon"]??"",
-              style: TextStyle(
-                  fontSize: size.width * 0.04, fontWeight: FontWeight.bold)),
+          Text(
+            "Subscribed on",
+            style: TextStyle(color: Colors.grey, fontSize: size.width * 0.035),
+          ),
+          Text(
+            subscription["subscribedon"] ?? "",
+            style: TextStyle(
+              fontSize: size.width * 0.04,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
 
           SizedBox(height: size.height * 0.02),
 
@@ -379,38 +429,56 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
               if (isActive)
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade100,
-                      foregroundColor: Colors.black87,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8))),
+                    backgroundColor: Colors.grey.shade100,
+                    foregroundColor: Colors.black87,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   onPressed: () {
                     // Navigator.push(
                     //   context,
                     //   MaterialPageRoute(builder: (_) => ChangePricesScreen()),
                     // );
-                     Navigator.pushNamed(
-                  // ignore: use_build_context_synchronously
-                  context,
-                  Config.changePriceRouteName,
-                  arguments: subscription,
-                );
+                   
+
+ subscription["isPackage"] = false;
+
+ Navigator.pushNamed(
+                      // ignore: use_build_context_synchronously
+                      context,
+                      Config.changePriceRouteName,
+                      arguments: subscription,
+                    ).then((value) {
+      callgetSubscriptionsAPI();
+    callgetPlansAPI();
+    });
+
+
+
+
+
+
+
                   },
                   child: const Text("Change Prices"),
                 ),
               SizedBox(width: size.width * 0.03),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: isActive ? Colors.green : Colors.black87,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8))),
+                  backgroundColor: isActive ? Colors.green : Colors.black87,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 onPressed: () {
-                  _showJobPackageBottomSheet();
+                  _showJobPackageBottomSheet(packages);
                 },
                 child: Text(isActive ? "Update" : "Renew"),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -419,101 +487,60 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   Widget _buildJobInfo(String label, String value, Size size) {
     return Column(
       children: [
-        Text(label,
-            style: TextStyle(color: Colors.grey, fontSize: size.width * 0.035)),
+        Text(
+          label,
+          style: TextStyle(color: Colors.grey, fontSize: size.width * 0.035),
+        ),
         SizedBox(height: size.height * 0.005),
-        Text(value,
-            style: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: size.width * 0.04)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: size.width * 0.04,
+          ),
+        ),
       ],
     );
   }
 
-  void _showJobPackageBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "Plan Update to",
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87),
-                  ),
-                  const SizedBox(height: 6),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: const Text(
-                      "Select job package",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...List.generate(jobPackages.length, (index) {
-                    return Column(
-                      children: [
-                        RadioListTile<int>(
-                          value: index,
-                          groupValue: selectedPackage,
-                          onChanged: (val) {
-                            setModalState(() {
-                              selectedPackage = val;
-                            });
-                          },
-                          title: Text(
-                              "${jobPackages[index]["jobs"]} Jobs / ₹ ${jobPackages[index]["package"]}"),
-                        ),
-                        const Divider(),
-                      ],
+  void _showJobPackageBottomSheet(packagesData) {
+   BottomSheetUtils.showJobPackageSheet(
+    context: context,
+    plansJson: packages,
+    onSubmit: (selectedPackage) {
+      print("Selected Package ID: ${selectedPackage['id']}");
+      print("Selected Package Jobs: ${selectedPackage['jobs']}");
+      print("Selected Package: $selectedPackage");
+      subscription["selectedPackage"] = selectedPackage;
+      subscription["isPackage"] = true;
+      subscription["plan"] = packages[selectedPackage["selectedIndex"]];
+       Navigator.pushNamed(
+                      // ignore: use_build_context_synchronously
+                      context,
+                      Config.changePriceRouteName,
+                      arguments: subscription,
                     );
-                  }),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: (){
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const UpdatePlanScreen()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: selectedPackage != null
-                          ? Colors.green
-                          : Colors.grey.shade300,
-                      minimumSize: const Size(double.infinity, 45),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: Text(
-                      "Proceed",
-                      style: TextStyle(
-                          color: selectedPackage != null
-                              ? Colors.white
-                              : Colors.black54),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+
+//       Navigator.push(
+//   context,
+//   MaterialPageRoute(
+//     builder: (_) => UpdatePlanScreen(
+//       selectedPackage: {
+//     "id": subscription["id"],
+//     "jobs": subscription["jobs"],
+//     "amount": subscription["amount"],
+//   },
+//     ),
+//   ),
+// );
+//  Navigator.push(
+//                         context,
+//                         MaterialPageRoute(
+//                             builder: (_) => const UpdatePlanScreen()),
+//                       );
+
+    },
+  );
   }
 }
 
@@ -619,7 +646,6 @@ class _CreateSubscriptionScreenState extends State<CreateSubscriptionScreen> {
                       context,
                       Config.createPackageRouteName,
                     );
-
                   },
                 ),
               ),
@@ -635,16 +661,15 @@ class _CreateSubscriptionScreenState extends State<CreateSubscriptionScreen> {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontSize: 14,
-        color: Colors.black87,
-        height: 1.4,
-      ),
+      style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
     );
   }
 
   /// Reusable Button
-  Widget _buildYellowButton({required String title, required VoidCallback onPressed}) {
+  Widget _buildYellowButton({
+    required String title,
+    required VoidCallback onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
       height: 50,

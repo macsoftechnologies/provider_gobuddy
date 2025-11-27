@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:gobuddy/pages/account/accountItems/mySubscription/update_plan_summary.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:gobuddy/pages/splash/splash_screen.dart';
 import 'package:gobuddy/pages/onboard/onboard_screen.dart';
@@ -98,7 +99,19 @@ class MyAppRouteState extends State<MyAppRoute> {
       //     builder: (_) => const SplashScreen(),
       //   );
       // },
+
+      
       onGenerateRoute: (settings) {
+
+         if (settings.name == Config.PlanSummaryRouteName) {
+          final args = settings.arguments as Map<String, dynamic>;
+         
+          return MaterialPageRoute(
+            builder: (_) => UpdateSummaryScreen(
+              subscription: args ?? {}
+            ),
+          );
+        }
         if (settings.name == Config.otpRouteName) {
           final args = settings.arguments as Map<String, dynamic>;
          

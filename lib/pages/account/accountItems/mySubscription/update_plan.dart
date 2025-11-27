@@ -211,14 +211,14 @@ class _UpdatePlanScreenState extends State<UpdatePlanScreen> {
                     ),
                     onPressed: () {
                       //UpdateSummaryScreen
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                            //OTPScreen(phone: _phoneController.text),
-                            UpdateSummaryScreen()
-                        ),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //       builder: (_) =>
+                      //       //OTPScreen(phone: _phoneController.text),
+                      //       UpdateSummaryScreen()
+                      //   ),
+                      // );
                       debugPrint(
                           "Updated Data: ${json.encode(subscriptionData)}");
                     },

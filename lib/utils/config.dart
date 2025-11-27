@@ -145,6 +145,7 @@ class Config {
   static const cardDetailsScreenName = "card_details_screen";
   static const addAddressRouteName = "add_address";
   static const userOrderSummaryRouteName = "user_order_summary_screen";
+  static const PlanSummaryRouteName = "plan_summary_screen";
   static var aboutUsRouteName = "about_us_screen";
   static var howToUseRouteName = "how_to_use_screen";
   static const checkoutRouteName = "checkout_screen";

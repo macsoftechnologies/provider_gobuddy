@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/pages/account/accountItems/mySubscription/update_plan_summary.dart';
 import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
 import 'package:gobuddy/utils/config.dart';
@@ -119,8 +120,6 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
               context: context,
               message: parsed["message"],
             );
-
-            
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -241,21 +240,27 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
               var services = parsed["sub_category"][i]["services"];
               for (int j = 0; j < services.length; j++) {
                 try {
-                  List<dynamic> filteredObjects = existServices
-                      .where((obj) => obj["service_id"] == services[j]["id"])
-                      .toList();
+                  dynamic selItem = {};
 
-                  print(filteredObjects);
-                  if (filteredObjects.length > 0) {
+                  existServices.forEach(
+                    (var item) => {
+                      if (item["service_id"] == services[j]["id"])
+                        {selItem = item},
+                    },
+                  );
+
+                  if (selItem.length > 0) {
                     try {
-                      var serverPrice = filteredObjects[0]["price"];
-                      var serverDiscount = filteredObjects[0]["discount"];
-                      var typemode = filteredObjects[0]["type"] == "percentage"
+                      var serverPrice = selItem["price"];
+                      var serverDiscount = selItem["discount"];
+                      var typemode = selItem["type"] == "percentage"
                           ? "%"
                           : "₹";
 
                       services[j]["tprice"] = serverPrice;
                       services[j]["tdiscount"] = serverDiscount;
+                      services[j]["subscription_service_id"] =
+                          selItem["subscription_service_id"] ?? "";
 
                       double totalvalue = 0;
                       int amount = 0;
@@ -273,10 +278,10 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
 
                       services[j]["ttotal"] = totalvalue.toString();
                       services[j]["acontroller"] = TextEditingController(
-                        text: filteredObjects[0]["price"],
+                        text: selItem["price"],
                       );
                       services[j]["dcontroller"] = TextEditingController(
-                        text: filteredObjects[0]["discount"],
+                        text: selItem["discount"],
                       );
                       services[j]["menuselect"] = typemode;
                       services[j]["menuselectVal"] = typemode;
@@ -351,16 +356,27 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
           if (parsed["status"] == "valid") {
             for (int i = 0; i < parsed["addons"].length; i++) {
               try {
-                List<dynamic> filteredObjects = existOrders
-                    .where(
-                      (obj) => obj["addon_id"] == parsed["addons"][i]["id"],
-                    )
-                    .toList();
+                // List<dynamic> filteredObjects = existOrders
+                //     .where(
+                //       (obj) => obj["addon_id"] == parsed["addons"][i]["id"],
+                //     )
+                //     .toList();
 
-                print(filteredObjects);
+                dynamic selItem = {};
 
-                if (filteredObjects.length > 0) {
-                  var addOnPrice = filteredObjects[0]["amount"];
+                existOrders.forEach(
+                  (var item) => {
+                    if (item["addon_id"] == parsed["addons"][i]["id"])
+                      {selItem = item},
+                  },
+                );
+
+                print(selItem);
+
+                if (selItem.length > 0) {
+                  var addOnPrice = selItem["amount"];
+                  parsed["addons"][i]["subscription_service_id"] =
+                      selItem["subscription_service_id"] ?? "";
                   parsed["addons"][i]["amount"] = addOnPrice;
                   parsed["addons"][i]["addonsAmount"] = TextEditingController(
                     text: addOnPrice,
@@ -448,7 +464,7 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                   CustomBackButton(),
                   SizedBox(width: size.width * 0.03),
                   Text(
-                    "Change Prices",
+                    widget.subscriptiondetails["isPackage"] == true?"Upgrade Plan":"Change Prices",
                     style: TextStyle(
                       fontSize: size.width * 0.05,
                       fontWeight: FontWeight.bold,
@@ -466,26 +482,93 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Title and Price
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "${widget.subscriptiondetails["category"]}\n${widget.subscriptiondetails["subscription"]}  (${widget.subscriptiondetails["jobs"]} Jobs)",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: size.width * 0.045,
+                    widget.subscriptiondetails["isPackage"] == true
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "${widget.subscriptiondetails["category"]}\n${widget.subscriptiondetails["plan"]["plan"]}  (${widget.subscriptiondetails["selectedPackage"]["jobs"]} Jobs)",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: size.width * 0.045,
+                                ),
+                              ),
+                              Text(
+                                "₹ ${widget.subscriptiondetails["selectedPackage"]["amount"]}",
+                                style: TextStyle(
+                                  fontSize: size.width * 0.05,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "${widget.subscriptiondetails["category"]}\n${widget.subscriptiondetails["subscription"]}  (${widget.subscriptiondetails["jobs"]} Jobs)",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: size.width * 0.045,
+                                ),
+                              ),
+                              Text(
+                                "₹ ${widget.subscriptiondetails["package"]}",
+                                style: TextStyle(
+                                  fontSize: size.width * 0.05,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        Text(
-                          "₹ ${widget.subscriptiondetails["package"]}",
-                          style: TextStyle(
-                            fontSize: size.width * 0.05,
-                            fontWeight: FontWeight.bold,
+
+                   widget.subscriptiondetails["isPackage"] == true
+                        ?  Row(
+                       mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton(
+                           style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                     
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                          onPressed: () {
+
+
+                        Navigator.pushNamed(
+                      // ignore: use_build_context_synchronously
+                      context,
+                      Config.PlanSummaryRouteName,
+                      arguments: widget.subscriptiondetails,
+                    ).then((value) {
+    
+    });
+
+                      //         Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //       builder: (_) =>
+                      //       //OTPScreen(phone: _phoneController.text),
+                      //       UpdateSummaryScreen()
+                      //   ),
+                      // );
+                            // Handle button press
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize
+                                .min, // To prevent the Row from expanding unnecessarily
+                            children: [
+                              Icon(Icons.upgrade),
+                              SizedBox(width: 8), // Add some spacing
+                              Text('Upgrade Plan'),
+                            ],
                           ),
                         ),
                       ],
-                    ),
-                    SizedBox(height: size.height * 0.02),
+                    ): SizedBox(height: 1),
 
                     // Category Tabs (NO SingleChildScrollView now)
                     SizedBox(
@@ -663,6 +746,11 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                             if (amount.length > 0) {
                               servicesData.add({
                                 "service_id": services[j]["id"],
+
+                                "subscription_service_id":
+                                    services[j]["subscription_service_id"] ??
+                                    "",
+
                                 "price": amount,
                                 "discount": discount,
                                 "type": services[j]["menuselect"] == "%"
@@ -695,8 +783,8 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                           "sub_category_id": subCat,
                           "subscription":
                               widget.subscriptiondetails["subscription"],
-                          "jobs":  widget.subscriptiondetails["jobs"],
-                          "package":  widget.subscriptiondetails["package"],
+                          "jobs": widget.subscriptiondetails["jobs"],
+                          "package": widget.subscriptiondetails["package"],
                           "services": servicesData,
                         };
 
