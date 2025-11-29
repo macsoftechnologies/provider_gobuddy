@@ -9,6 +9,8 @@ import 'package:gobuddy/services/repository.dart';
 import 'package:gobuddy/utils/util_class.dart';
 
 import '../../../../utils/config.dart';
+    import 'package:http/http.dart' as http;
+
 
 class TechnicianServicesPrices extends StatefulWidget {
   final dynamic categoryName;
@@ -70,6 +72,21 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
   dynamic userData = {};
 
   dynamic selectedPack = {};
+
+   Future<bool> isImageUrl(String url) async {
+      try {
+        final response = await http.head(Uri.parse(url));
+        if (response.statusCode == 200) {
+          final contentType = response.headers['content-type'];
+          return contentType != null && contentType.startsWith('image/');
+        }
+        return false;
+      } catch (e) {
+        // Handle network errors or invalid URLs
+        print('Error checking URL: $e');
+        return false;
+      }
+    }
 
   void callAddsubscriptionAPI(dynamic data) async {
     var internet = await UtilClass.checkInternet();

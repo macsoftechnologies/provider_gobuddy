@@ -36,6 +36,7 @@ import '../pages/paymentGateway/payment_screen.dart';
 import '../pages/ratings/customer_ratings.dart';
 import '../pages/registrationFee/registaration_fee_screen.dart';
 import '../pages/registrationFee/registration_success_screen.dart';//OTPVerificationScreen
+import 'package:gobuddy/pages/account/accountItems/mySubscription/subscription_success_screen.dart';
 //EKYCVerificationPage
 
 class MyAppRoute extends StatefulWidget {
@@ -92,6 +93,7 @@ class MyAppRouteState extends State<MyAppRoute> {
         Config.supportRouteName: (ctx) =>  SupportScreen(),
         Config.createPackageRouteName: (ctx) =>  CreatePackageScreen(),
         Config.planSummaryRouteName: (ctx) =>  SummaryScreen(),
+        Config.subSuccessRouteName: (ctx) =>  SubscriptionSuccessPage(),
 
       },
       // onGenerateRoute: (settings) {

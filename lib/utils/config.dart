@@ -245,4 +245,5 @@ static const ekycRouteName='ekyc verification screen';//DashboardPage
    static const changePriceRouteName='Change Price Screen';
 //TechnicianServicesPrices SummaryScreen
   static const planSummaryRouteName='Plan Summary screen Screen';//SummaryScreen
+   static const subSuccessRouteName='Subscription Success Page';
 }

@@ -240,7 +240,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     Razorpay razorpay = Razorpay();
     var options = {
       'key': 'rzp_live_ZdGjJKZdukGGzL',
-      'amount':  100,
+      'amount':  100*amount,
       'name': 'Go buddy',
       'description': 'Subscription',
       'retry': {'enabled': true, 'max_count': 1},
@@ -316,7 +316,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
       dynamic subscriptionIds = plans.map((sub) => sub["subscription_id"]).toList();
       String commaSeparatedSub= subscriptionIds.join(', ');
 
-    if (internet) {
+    if (internet) {         
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.subPayment, {
@@ -340,7 +340,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   Navigator.of(context).pop(); // close the dialog first
                   Navigator.of(
                     context,
-                  ).pushReplacementNamed(Config.regiSuccessRouteName);
+                  ).pushReplacementNamed(Config.subSuccessRouteName);
                 });
 
                 return const ReferralDialog(

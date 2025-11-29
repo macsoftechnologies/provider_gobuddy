@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/components/dailogbox.dart';
 import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
@@ -33,7 +35,7 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.tools, {
-        "user_id": userData["user_id"] ?? "4361",
+        "user_id": "4355" ?? "4361",
       }).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = {};
@@ -104,6 +106,66 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
     return _toolNameController.text.isNotEmpty &&
         _descriptionController.text.isNotEmpty &&
         _selectedImage != null;
+  }
+
+
+   void callRequestToolAPI() async {
+    
+    var formData = FormData.fromMap({
+       "user_id": "4355" ?? "4361",
+       "tool_name":_toolNameController.text,
+      "description": _descriptionController.text,
+      "tool_image": await MultipartFile.fromFile(
+        _selectedImage!.path,
+        filename: "aadhar_front",
+      ),
+      
+    });
+
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postimagesApiService(EndPoints.addrequesttool, formData).then((
+        value,
+      ) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+          } else {
+            // ignore: use_build_context_synchronously
+            // UtilClass.showAlertDialog(
+            //   // ignore: use_build_context_synchronously
+            //   context: context,
+            //   message: parsed["message"],
+            // );
+          }
+
+          setState(() {
+                _toolNameController.clear();
+                _descriptionController.clear();
+                _selectedImage = null;
+              });
+
+
+               UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"] ?? "Added successfully",
+            );
+
+         
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   @override
@@ -317,18 +379,16 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
             text: "Submit",
             enabled: _isFormComplete,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Tool request submitted successfully!"),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   const SnackBar(
+              //     content: Text("Tool request submitted successfully!"),
+              //     backgroundColor: Colors.green,
+              //   ),
+              // );
 
-              setState(() {
-                _toolNameController.clear();
-                _descriptionController.clear();
-                _selectedImage = null;
-              });
+              callRequestToolAPI();
+
+              
             },
           ),
         ],
@@ -365,10 +425,16 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
                 color: Colors.green.shade100,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
+              child:  item["status"] == "1"?const Text(
                 "Accepted",
                 style: TextStyle(
                   color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ):const Text(
+                "Pending",
+                style: TextStyle(
+                  color: Colors.orangeAccent,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -391,10 +457,7 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
            item["description"]??"",
             style: const TextStyle(color: Colors.grey, fontSize: 14),
           ),
-          const Text(
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-            style: TextStyle(fontSize: 15),
-          ),
+          
           SizedBox(height: deviceHeight * 0.01),
 
           /// Tool Image
@@ -416,10 +479,12 @@ class _RequestToolScreenState extends State<RequestToolScreen> {
               ), // Slightly smaller to account for border
               child: Padding(
                 padding: EdgeInsets.all(8), // Inner padding
-                child: Image.asset(
-                  "assets/images/tubeBender.png",
-                  fit: BoxFit.cover,
-                ),
+                child: Image.network(
+                                      item["tool_image"],
+                                      height: 50,
+                                      width: 50,
+                                      fit: BoxFit.cover,
+                                    ),
               ),
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
 import 'package:gobuddy/utils/config.dart';
 import 'package:gobuddy/utils/util_class.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../../../components/custom_back_button.dart';
 import '../../../paymentGateway/payment_screen.dart';
@@ -75,23 +76,23 @@ class _UpdateSummaryScreenState extends State<UpdateSummaryScreen> {
 
     return total.toString();
   }
+
   String get exttotalPrice {
-    double total = double.parse(
-      widget.subscription["package"],
-    );
+    double total = double.parse(widget.subscription["package"]);
 
     return total.toString();
   }
-   
 
   String get finalPrice {
     double total = double.parse(
       widget.subscription["selectedPackage"]["amount"],
-    );;
-    
-    double finalPrice = total -( double.parse(
-      widget.subscription["package"],
-    ) + double.parse(_appliedCouponAmount));
+    );
+    ;
+
+    double finalPrice =
+        total -
+        (double.parse(widget.subscription["package"]) +
+            double.parse(_appliedCouponAmount));
     return finalPrice.toString();
   }
 
@@ -142,12 +143,163 @@ class _UpdateSummaryScreenState extends State<UpdateSummaryScreen> {
     }
   }
 
+  /////////
+  ///////
+  ///
+  ///
+  void callRagerPayment() async {
+
+   
+    var amount = double.parse(finalPrice).toInt();
+    ;
+    Razorpay razorpay = Razorpay();
+    var options = {
+      'key': 'rzp_live_ZdGjJKZdukGGzL',
+      'amount': 100*amount,
+      'name': 'Go buddy',
+      'description': 'Upgrade Package',
+      'retry': {'enabled': true, 'max_count': 1},
+      'send_sms_hash': true,
+      'prefill': {'contact': '9291575784', 'email': 'test@razorpay.com'},
+      'external': {
+        'wallets': ['paytm'],
+      },
+    };
+    razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentErrorResponse);
+    razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccessResponse);
+    razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWalletSelected);
+    razorpay.open(options);
+  }
+
+  void handlePaymentErrorResponse(PaymentFailureResponse response) {
+    /*
+    * PaymentFailureResponse contains three values:
+    * 1. Error Code
+    * 2. Error Description
+    * 3. Metadata
+    * */
+    showAlertDialog(
+      context,
+      "Payment Failed",
+      "Code: ${response.code}\nDescription: ${response.message}\nMetadata:${response.error.toString()}",
+    );
+  }
+
+  void handlePaymentSuccessResponse(PaymentSuccessResponse response) {
+    /*
+    * Payment Success Response contains three values:
+    * 1. Order ID
+    * 2. Payment ID
+    * 3. Signature
+    * */
+    // showAlertDialog(
+    //   context,
+    //   "Payment Successful",
+    //   "Payment ID: ${response.paymentId}",
+    // );
+
+    callpaymentVeifyAPI(response.paymentId!);
+  }
+
+  void handleExternalWalletSelected(ExternalWalletResponse response) {
+    showAlertDialog(
+      context,
+      "External Wallet Selected",
+      "${response.walletName}",
+    );
+  }
+
+  void showAlertDialog(BuildContext context, String title, String message) {
+    // set up the buttons
+    Widget continueButton = ElevatedButton(
+      child: const Text("Continue"),
+      onPressed: () {},
+    );
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(title: Text(title), content: Text(message));
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  void callpaymentVeifyAPI(String paymentid) async {
+    var internet = await UtilClass.checkInternet();
+    print(widget.subscription);
+
+    if (internet) {
+
+      var input  = {
+      
+        'payment_id':paymentid,
+        "subscription_id": widget.subscription["subscription_id"],
+        "subscription": widget.subscription["plan"]['plan'],
+        "jobs": widget.subscription["selectedPackage"]['jobs'],
+        "package": widget.subscription["selectedPackage"]['amount'],
+        "amount": finalPrice,
+      };
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.upgradeSub, input).then((value) async {
+        UtilClass.hideProgress();
+        dynamic parsed = {};
+        try {
+          parsed = await json.decode(value);
+          if (parsed["status"] == "valid") {
+            showDialog(
+              context: context,
+              builder: (context) {
+                Future.delayed(const Duration(seconds: 3), () {
+                  Navigator.of(context).pop(); // close the dialog first
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed(Config.regiSuccessRouteName);
+                });
+
+                return const ReferralDialog(
+                  title: "Payment Successful",
+                  subtitle: "Thank You for upgrading the subscription.",
+                  image: "assets/images/greentick.png",
+                );
+              },
+            );
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+        print(parsed["message"]);
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  ///
+  ///
+  ///
+  ///
+  ///
+  ///
+  ///
+  ///
+  ///
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final double width = size.width;
     final double height = size.height;
-    
 
     int total = widget.newPrice;
     int discount = isCouponApplied ? widget.discount : 0;
@@ -448,7 +600,7 @@ class _UpdateSummaryScreenState extends State<UpdateSummaryScreen> {
                                 ),
                               ],
                             ),
-                              Row(
+                            Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text(
@@ -524,7 +676,6 @@ class _UpdateSummaryScreenState extends State<UpdateSummaryScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  
                                   "₹ $finalPrice",
                                   style: const TextStyle(
                                     fontSize: 18,
@@ -546,7 +697,7 @@ class _UpdateSummaryScreenState extends State<UpdateSummaryScreen> {
                           ),
                           GestureDetector(
                             onTap: () {
-                              //callRagerPayment();
+                              callRagerPayment();
                               // Navigator.push(
                               //   context,
                               //   MaterialPageRoute(builder: (context) => PaymentMethodScreen(amount: 0.00, fromScreen: 'subscription',)),

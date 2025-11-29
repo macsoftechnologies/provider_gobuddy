@@ -375,8 +375,8 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
 
                 if (selItem.length > 0) {
                   var addOnPrice = selItem["amount"];
-                  parsed["addons"][i]["subscription_service_id"] =
-                      selItem["subscription_service_id"] ?? "";
+                  parsed["addons"][i]["provider_addon_price_id"] =
+                      selItem["id"] ?? "";
                   parsed["addons"][i]["amount"] = addOnPrice;
                   parsed["addons"][i]["addonsAmount"] = TextEditingController(
                     text: addOnPrice,
@@ -798,6 +798,9 @@ class _ChangePricesScreenState extends State<ChangePricesScreen> {
                               if (amountadd.length > 0) {
                                 var dataAddon = {
                                   "addon_id": addonsData[a]["id"],
+                                   "provider_addon_price_id": addonsData[a]["provider_addon_price_id"],
+
+                                
                                   "price": amountadd,
                                 };
                                 addOnData.add(dataAddon);

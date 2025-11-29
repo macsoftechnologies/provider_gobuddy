@@ -99,15 +99,15 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
       userData = json.decode(userDataValue);
     }
     callgetSubscriptionsAPI();
-    callgetPlansAPI();
+    
   }
-  void callgetPlansAPI() async {
+  void callgetPlansAPI(sub) async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.packagesApi, {
-        "sub_category_id": "27",
+        "subscription_id": sub["subscription_id"],
       }).then((value) async {
         UtilClass.hideProgress();
         dynamic parsed = {};
@@ -123,6 +123,8 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
             setState(() {
               packages = parsed["plans"];
             });
+
+            _showJobPackageBottomSheet({});
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -451,7 +453,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                       arguments: subscription,
                     ).then((value) {
       callgetSubscriptionsAPI();
-    callgetPlansAPI();
+   
     });
 
 
@@ -473,7 +475,8 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                   ),
                 ),
                 onPressed: () {
-                  _showJobPackageBottomSheet(packages);
+                   callgetPlansAPI(subscription);
+                           
                 },
                 child: Text(isActive ? "Update" : "Renew"),
               ),

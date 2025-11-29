@@ -14,11 +14,13 @@ class EndPoints {
   static const String profile = "${newbaseUrl}profile";
   static const String updateProfile = "${newbaseUrl}update_profile";
   static const String tools = "${newbaseUrl}requesttools";
-  static const String catsubCat = "${newbaseUrl}categorybasedsubcategoryservices";
- static const String catAddons = "${newbaseUrl}categorybasedaddons";
+  static const String addrequesttool = "${newbaseUrl}addrequesttool";
 
+  static const String catsubCat =
+      "${newbaseUrl}categorybasedsubcategoryservices";
+  static const String catAddons = "${newbaseUrl}categorybasedaddons";
+  static const String upgradeSub = "${newbaseUrl}upgrade_subscription";
 
-  
   static const String servicesApi = "${newbaseUrl}services";
 
   static const String packagesApi = "${newbaseUrl}getjobspackage";
@@ -26,20 +28,15 @@ class EndPoints {
       "${newbaseUrl}add_provider_subscription";
   static const String getprovSubscriptionApi =
       "${newbaseUrl}get_provider_subscription";
-       static const String deleteprovSubscriptionApi =
+  static const String deleteprovSubscriptionApi =
       "${newbaseUrl}delete_provider_subscription";
 
-      static const String upadteprovSubscriptionApi =
+  static const String upadteprovSubscriptionApi =
       "${newbaseUrl}update_provider_subscription";
 
-      
+  static const String coupounApi = "${newbaseUrl}check_coupon";
+  static const String subPayment = "${newbaseUrl}provider_subscription_payment";
 
-       static const String coupounApi =
-      "${newbaseUrl}check_coupon";
-      static const String subPayment =
-      "${newbaseUrl}provider_subscription_payment";
-
-         static const String subscriptionorders =
+  static const String subscriptionorders =
       "${newbaseUrl}get_provider_subscriptionorders";
-      
 }
