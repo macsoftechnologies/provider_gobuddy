@@ -294,7 +294,15 @@ class _AccountPageState extends State<AccountPage> {
                     Icons.person_outline,
                     "View Profile",
                     onTap: () {
-                      Navigator.pushNamed(context, Config.viewProfileRouteName);
+                      // Navigator.pushNamed(context, Config.viewProfileRouteName);
+
+                      Navigator.pushNamed(
+                        // ignore: use_build_context_synchronously
+                        context,
+                        Config.viewProfileRouteName,
+                      ).then((value) {
+                        callgetProfileAPI();
+                      });
                     },
                   ),
                   const Divider(height: 1, color: Color(0xFFE0E0E0)),
