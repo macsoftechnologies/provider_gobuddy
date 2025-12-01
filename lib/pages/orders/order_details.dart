@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../components/button.dart';
 import '../../utils/config.dart';
+import 'package:image_picker/image_picker.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   const OrderDetailsScreen({Key? key}) : super(key: key);
@@ -18,8 +20,108 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   bool _isVerified = false; // 🔹 New flag for Verify button state
 
   // New variables for extra service charge
+ 
+  ////////services
+   late Map<String, dynamic> serviceData;
+  final TextEditingController _serviceCodeController = TextEditingController();
+  // ---------- SERVICES LIST (MULTIPLE SERVICE ORDERS) ----------
+  List<Map<String, dynamic>> servicesData = [
+    {
+      "serviceTitle": "AC Installation",
+      "serviceType": "AC Service",
+      "location": "Sheela Nagar, Gajuwaka, Visakhapatnam",
+      "dateTime": "10/8/2024  12:00 AM",
+      "serviceId": "#356234",
+      "price": 599.0,
+      "travelingCharge": 60.0,
+      "status": "In Progress",
+      "customerName": "D. Viswak Varma",
+      "phoneNumber": "9876543210",
+      "altPhoneNumber": "9075643210",
+      "is_photos_upload": false,
+      "imageUrl":
+          "https://img.freepik.com/free-photo/man-installing-air-conditioner_53876-13823.jpg",
+      "beforeImages": [],
+      "afterImages": [],
+    },
+      {
+      "serviceTitle": "AC Installation",
+      "serviceType": "AC Service",
+      "location": "Sheela Nagar, Gajuwaka, Visakhapatnam",
+      "dateTime": "10/8/2024  12:00 AM",
+      "serviceId": "#356234",
+      "price": 599.0,
+      "travelingCharge": 60.0,
+      "status": "In Progress",
+      "customerName": "D. Viswak Varma",
+      "phoneNumber": "9876543210",
+      "altPhoneNumber": "9075643210",
+      "is_photos_upload": false,
+      "imageUrl":
+          "https://img.freepik.com/free-photo/man-installing-air-conditioner_53876-13823.jpg",
+      "beforeImages": [],
+      "afterImages": [],
+    },
+    {
+      "serviceTitle": "Refrigerator Repair",
+      "serviceType": "Fridge Service",
+      "location": "Madhurawada, Visakhapatnam",
+      "dateTime": "10/8/2024  02:30 PM",
+      "serviceId": "#789654",
+      "price": 799.0,
+      "travelingCharge": 50.0,
+      "status": "Pending",
+      "customerName": "Kumar",
+      "phoneNumber": "9000000001",
+      "altPhoneNumber": "9000099990",
+      "is_photos_upload": false,
+      "imageUrl":
+          "https://img.freepik.com/free-photo/man-repairing-refrigerator_329181-2206.jpg",
+      "beforeImages": [],
+      "afterImages": [],
+    },
+    {
+      "serviceTitle": "Washing Machine Repair",
+      "serviceType": "Washer Service",
+      "location": "Gajuwaka, Visakhapatnam",
+      "dateTime": "11/8/2024  10:00 AM",
+      "serviceId": "#564789",
+      "price": 699.0,
+      "travelingCharge": 40.0,
+      "status": "Completed",
+      "customerName": "Ramesh",
+      "phoneNumber": "9888876543",
+      "altPhoneNumber": "9000088880",
+      "is_photos_upload": false,
+      "imageUrl":
+          "https://img.freepik.com/free-photo/man-fixing-washing-machine_329181-1429.jpg",
+      "beforeImages": [],
+      "afterImages": [],
+    },
+  ];
+
+  int selectedServiceIndex = 0;
+
   List<Map<String, dynamic>> _extraCharges = [];
   double _extraServiceTotal = 0.0;
+
+  // ------------------ IMAGE PICKER ------------------
+  final ImagePicker picker = ImagePicker();
+
+  Future<void> pickServiceImage(bool isBefore) async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        if (isBefore) {
+          servicesData[selectedServiceIndex]["beforeImages"].add(File(pickedFile.path));
+        } else {
+          servicesData[selectedServiceIndex]["afterImages"].add(File(pickedFile.path));
+        }
+      });
+    }
+  }
+  /////////services end
 
   @override
   void initState() {
@@ -42,6 +144,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
     ''';
     orderData = json.decode(jsonData);
+     serviceData = servicesData[0];
   }
 
   // Helper method to safely convert dynamic values to double
@@ -56,9 +159,22 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final totalAmount = _parseDouble(orderData["price"]) +
-        _parseDouble(orderData["travelingCharge"]) +
-        _extraServiceTotal;
+    // final totalAmount = _parseDouble(orderData["price"]) +
+    //     _parseDouble(orderData["travelingCharge"]) +
+    //     _extraServiceTotal;
+        ////ser
+        double servicesTotal = 0;
+    for (var item in servicesData) {
+      servicesTotal += _parseDouble(item["price"]);
+    }
+
+    double travelingTotal = 0;
+    for (var item in servicesData) {
+      travelingTotal += _parseDouble(item["travelingCharge"]);
+    }
+
+    final totalAmount = servicesTotal + travelingTotal + _extraServiceTotal;
+        //ser end
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -90,13 +206,70 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             _buildOrderCard(size),
             SizedBox(height: size.height * 0.02),
             _buildCustomerDetails(size),
+            // SizedBox(height: size.height * 0.02),
+            // _buildOrderCodeSection(size),
             SizedBox(height: size.height * 0.02),
-            _buildOrderCodeSection(size),
-            SizedBox(height: size.height * 0.02),
-            _buildUploadImagesSection(size),
-            SizedBox(height: size.height * 0.02),
-            _buildIssueButton(size),
-            SizedBox(height: size.height * 0.02),
+
+            //serv
+             // ---------------- SERVICE TABS ----------------
+            Text('Order Have ${servicesData.length} Services',
+             style: TextStyle(
+             fontWeight: FontWeight.bold,
+       
+        fontSize: size.width * 0.045)),
+         SizedBox(height: size.height * 0.01),
+         Card(
+  elevation: 4,
+  margin: EdgeInsets.symmetric(vertical: 10),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+  ),
+  child: Container(
+    padding: EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 4,
+          offset: Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        _buildServiceTabs(size), // servicesData.length
+
+        const SizedBox(height: 20),
+
+        // ---------------- SELECTED SERVICE CARD ----------------
+        _buildSelectedServiceCard(size),
+
+        const SizedBox(height: 25),
+
+         Align(
+          alignment: Alignment.centerLeft,
+          child: _buildUploadImageTitle(size),
+        ),
+
+        const SizedBox(height: 15),
+  Align(
+          alignment: Alignment.centerLeft,
+          child: _imageUploadSection(size),
+        ),
+
+        const SizedBox(height: 15),
+
+        _buildActionButtons(size),
+      ],
+    ),
+  ),
+),
+
+            const SizedBox(height: 20),
+           
+           //old price
             _buildPriceDetails(size, totalAmount),
             SizedBox(height: size.height * 0.03),
             GradientButton(
@@ -121,6 +294,180 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  //cancel order
+    void _showCancelDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final width = MediaQuery.of(context).size.width;
+        final height = MediaQuery.of(context).size.height;
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding:
+            EdgeInsets.symmetric(horizontal: width * 0.06, vertical: height * 0.03),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Cancel Service ?',
+                  style: TextStyle(
+                      fontSize: width * 0.05,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87),
+                ),
+                SizedBox(height: height * 0.015),
+                Text(
+                  'Are you sure you want to Cancel your service',
+                  textAlign: TextAlign.center,
+                  style:
+                  TextStyle(fontSize: width * 0.04, color: Colors.black54, height: 1.4),
+                ),
+                SizedBox(height: height * 0.03),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    SizedBox(
+                      width: width * 0.3,
+                      height: height * 0.055,
+                      child: OutlinedButton(
+                       onPressed: ()=> Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side:
+                          BorderSide(color: Colors.grey.shade300, width: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text('No',
+                            style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: width * 0.045,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    SizedBox(
+                      width: width * 0.3,
+                      height: height * 0.055,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                      _showCancelRequestPopup(context);
+                        
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text('Yes',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: width * 0.045,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
+  void _showCancelRequestPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // user must tap OK
+      builder: (BuildContext context) {
+        final width = MediaQuery.of(context).size.width;
+        final height = MediaQuery.of(context).size.height;
+
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: width * 0.06, vertical: height * 0.03),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: width * 0.22,
+                  width: width * 0.22,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFA726), // light orange background
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: width * 0.12,
+                    ),
+                  ),
+                ),
+                SizedBox(height: height * 0.025),
+                Text(
+                  "Cancel Request Submitted",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: width * 0.05,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: height * 0.015),
+                Text(
+                  "Your cancellation request has been submitted. Sorry to see you go, one of our representatives will contact you to initiate cancellation or you can message/call us at 9347785705.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: width * 0.04,
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
+                ),
+                SizedBox(height: height * 0.035),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                       // close popup
+                      // Navigator.pushReplacementNamed(context, '/nextScreen');
+                      // Replace '/nextScreen' with your actual screen route
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00A651), // green
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: height * 0.018),
+                    ),
+                    child: Text(
+                      "Ok",
+                      style: TextStyle(
+                        fontSize: width * 0.045,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -180,17 +527,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  orderData["serviceTitle"],
+                 "Order Details",
                   style: TextStyle(
                     fontSize: size.width * 0.045,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  orderData["serviceType"],
+                  "Order id: ${orderData["orderId"]}",
                   style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: size.width * 0.035,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 SizedBox(height: size.height * 0.005),
@@ -338,62 +685,50 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             icon: const Icon(Icons.message, color: Colors.grey),
             label: const Text("Send message"),
           ),
+
+           SizedBox(height: size.height * 0.01),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _orderCodeController,
+                decoration: InputDecoration(
+                  hintText: "Enter code",
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            SizedBox(width: size.width * 0.03),
+            ElevatedButton(
+              onPressed: _isVerified
+                  ? null
+                  : () {
+                setState(() {
+                  _isVerified = true;
+                });
+                print("Order Code: ${_orderCodeController.text}");
+              },
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                backgroundColor: _isVerified ? Colors.green : Colors.blue,
+              ),
+              child: Text(
+                _isVerified ? "Verified" : "Verify",
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
         ],
       ),
     );
   }
 
-  /// Upload Images
-  Widget _buildUploadImagesSection(Size size) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Upload Before and After Service Images",
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: size.width * 0.045)),
-        SizedBox(height: size.height * 0.015),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text("Before",
-                style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: size.width * 0.035)),
-            _imageBox(size),
-            SizedBox(height: size.height * 0.015),
-            Text("After",
-                style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: size.width * 0.035)),
-            _imageBox(size),
-          ],
-        ),
-      ],
-    );
-  }
+ 
 
-  Widget _imageBox(Size size) {
-    return Row(
-      children: [
-        Container(
-          width: size.width * 0.35,
-          height: size.width * 0.35,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.image, size: 40, color: Colors.grey),
-        ),
-        SizedBox(width: size.width * 0.03),
-        const CircleAvatar(
-          backgroundColor: Colors.green,
-          child: Icon(Icons.add, color: Colors.white),
-        ),
-      ],
-    );
-  }
+
 
   /// Issue Button
   Widget _buildIssueButton(Size size) {
@@ -425,7 +760,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ],
           ),
           const Divider(),
-          _priceRow("AC Installation", _parseDouble(orderData["price"])),
+          // Each service price
+          Column(
+            children: servicesData.map((service) {
+              return _priceRow(service["serviceTitle"], service["price"]);
+            }).toList(),
+          ),
 
           // Display extra service charges
           if (_extraCharges.isNotEmpty)
@@ -683,4 +1023,181 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
+
+  ///services
+  Widget _buildServiceTabs(Size size) {
+    return SizedBox(
+      height: 45,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: servicesData.length,
+        separatorBuilder: (_, __) => SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          bool isSelected = selectedServiceIndex == index;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedServiceIndex = index;
+                serviceData = servicesData[index];
+              });
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.green : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                "Service ${index + 1}",
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ---------------- SELECTED SERVICE CARD ----------------
+  Widget _buildSelectedServiceCard(Size size) {
+    final service = servicesData[selectedServiceIndex];
+
+    return Container(
+      padding: EdgeInsets.all(14),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+                spreadRadius: 2,
+                blurRadius: 5,
+                color: Colors.black.withOpacity(0.06))
+          ]),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.network(
+              service["imageUrl"],
+              width: size.width * 0.22,
+              height: size.width * 0.22,
+              fit: BoxFit.cover,
+            ),
+          ),
+          SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(service["serviceTitle"],
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: size.width * 0.043)),
+
+                SizedBox(height: 6),
+
+                Text(service["location"],
+                    maxLines: 2,
+                    style: TextStyle(fontSize: size.width * 0.035)),
+
+                SizedBox(height: 8),
+
+                Text("₹${service['price']}",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: size.width * 0.045)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploadImageTitle(Size size) {
+    return Text("Upload Service Images",
+        style: TextStyle(
+            fontWeight: FontWeight.bold, fontSize: size.width * 0.045));
+  }
+
+  // ---------------- UPLOAD BOXES ----------------
+  Widget _imageUploadSection(Size size) {
+    final currentService = servicesData[selectedServiceIndex];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Before Service", style: TextStyle(fontSize: size.width * 0.04)),
+        SizedBox(height: 8),
+
+        _serviceImageGrid(currentService["beforeImages"], true),
+
+        SizedBox(height: 15),
+
+        Text("After Service", style: TextStyle(fontSize: size.width * 0.04)),
+        SizedBox(height: 8),
+
+        _serviceImageGrid(currentService["afterImages"], false),
+      ],
+    );
+  }
+
+  Widget _serviceImageGrid(List images, bool isBefore) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (var img in images)
+          Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              image: DecorationImage(
+                  image: FileImage(img), fit: BoxFit.cover),
+            ),
+          ),
+
+        GestureDetector(
+          onTap: () => pickServiceImage(isBefore),
+          child: Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade400)),
+            child: Icon(Icons.add, size: 35, color: Colors.green),
+          ),
+        )
+      ],
+    );
+  }
+
+  // ---------------- ACTION BUTTONS ----------------
+  Widget _buildActionButtons(Size size) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              _showCancelDialog(context);
+            },
+            child: const Text("Cancel Service"),
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () {},
+            child: const Text("Service Completed"),
+          ),
+        ),
+      ],
+    );
+  }
+  //services end
 }
