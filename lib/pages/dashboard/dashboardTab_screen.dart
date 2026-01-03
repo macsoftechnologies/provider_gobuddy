@@ -639,21 +639,22 @@ class _DashboardTabScreenState extends State<DashboardTabScreen> {
               // Status Cards Grid
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: screenWidth * 0.04,
-                    mainAxisSpacing: screenHeight * 0.02,
-                    childAspectRatio: 1.5,
-                  ),
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: dashboardData["statusCards"].length,
-                  itemBuilder: (context, index) {
-                    var card = dashboardData["statusCards"][index];
-                    return _buildStatusCard(card, screenWidth);
-                  },
-                ),
+                child:  GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: screenWidth * 0.04,
+                mainAxisSpacing: screenHeight * 0.02,
+                childAspectRatio:1.27,
+                // ← NEW
+              ),
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: dashboardData["statusCards"].length,
+              itemBuilder: (context, index) {
+                var card = dashboardData["statusCards"][index];
+                return _buildStatusCard(card, screenWidth);
+              },
+            ),
               ),
               SizedBox(height: screenHeight * 0.03),
 
@@ -944,57 +945,72 @@ class _DashboardTabScreenState extends State<DashboardTabScreen> {
   }
 
   Widget _buildStatusCard(Map<String, dynamic> card, double screenWidth) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Color(card["color"] as int),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "₹${card["amount"]}",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      "(${card["count"]})",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: screenWidth * 0.04,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _getImageFromString(card["title"] as String, screenWidth * 0.12),
-            ],
-          ),
-          Text(
-            card["title"] as String,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: screenWidth * 0.036,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+   return Container(
+     padding: const EdgeInsets.all(14),
+     decoration: BoxDecoration(
+       color: Color(card["color"] as int),
+       borderRadius: BorderRadius.circular(16),
+     ),
+     child: Column(
+       crossAxisAlignment: CrossAxisAlignment.start,
+       mainAxisSize: MainAxisSize.min,           // ← IMPORTANT
+       children: [
+         Row(
+           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+           children: [
+             Flexible(
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   FittedBox(                          // ← Prevent text overflow
+                     child: Text(
+                       "₹${card["amount"]}",
+                       style: TextStyle(
+                         color: Colors.white,
+                         fontSize: screenWidth * 0.05,
+                         fontWeight: FontWeight.bold,
+                       ),
+                     ),
+                   ),
+                   FittedBox(
+                     child: Text(
+                       "(${card["count"]})",
+                       style: TextStyle(
+                         color: Colors.white,
+                         fontSize: screenWidth * 0.04,
+                         fontWeight: FontWeight.w500,
+                       ),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+
+             Flexible(
+               child: _getImageFromString(
+                 card["title"] as String,
+                 screenWidth * 0.10,                 // ↓ make image smaller
+               ),
+             ),
+           ],
+         ),
+
+         const SizedBox(height: 8),
+
+         Text(
+           card["title"] as String,
+           maxLines: 1,
+           overflow: TextOverflow.ellipsis,        // ← Protect title
+           style: TextStyle(
+             color: Colors.white,
+             fontSize: screenWidth * 0.042,
+             fontWeight: FontWeight.w500,
+           ),
+         ),
+       ],
+     ),
+   );
+ }
 
   // Helper widget for a single subscription plan tile
   Widget _buildSubscriptionPlanTile(
