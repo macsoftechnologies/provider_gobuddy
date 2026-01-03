@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/services/end_points.dart';
@@ -8,8 +9,6 @@ import 'package:gobuddy/services/repository.dart';
 import 'package:gobuddy/utils/util_class.dart';
 import '../../utils/config.dart';
 import '../../utils/my_colors.dart';
-
-
 
 class DashboardTabScreen extends StatefulWidget {
   const DashboardTabScreen({super.key});
@@ -19,12 +18,12 @@ class DashboardTabScreen extends StatefulWidget {
 }
 
 class _DashboardTabScreenState extends State<DashboardTabScreen> {
-
- int currentIndex = 0;
+  int currentIndex = 0;
   dynamic profileDetails = {};
+  dynamic dashBoardDetails = {};
   Color green = Color(0xFF4CAF50);
   dynamic userData = {};
-  //sk 
+  //sk
   // Assume the data is flattened for easier calculation
   late List<Map<String, dynamic>> _allEarningsData;
   late int
@@ -41,50 +40,27 @@ class _DashboardTabScreenState extends State<DashboardTabScreen> {
   Timer? _timer;
   // Using colors found in the image
 
-  static const Color lightBlue = Color(0xFFBBDEFB); // Light blue for inactive dots
-  static const Color offerGreenBackground = Color(0xFFC4E047); // Specific green from image
-  static const Color textOrange = Color(0xFFFF913C); // Orange for '20% OFF' and fire icon
-  static const Color offerBgColor = Color(0xFFC4E047); // The lime green background color
+  static const Color lightBlue = Color(
+    0xFFBBDEFB,
+  ); // Light blue for inactive dots
+  static const Color offerGreenBackground = Color(
+    0xFFC4E047,
+  ); // Specific green from image
+  static const Color textOrange = Color(
+    0xFFFF913C,
+  ); // Orange for '20% OFF' and fire icon
+  static const Color offerBgColor = Color(
+    0xFFC4E047,
+  ); // The lime green background color
 
   // JSON Data Structure for Dynamic Screen
   Map<String, dynamic> dashboardData = {
     "isVerified": false, // false for PENDING, true for Verified
     "rating": 3.0,
-    "totalEarnings": "75,000",
-    "gbCoins": "125",
-    "jobsGoal": "120",
     "location": "35/08-PM Palem, Madhurawada, Visakhapatnam...",
     "profileImageUrl": 'assets/images/user.jpg',
-
     "statusCards": [
-      {
-        "title": "Current Month",
-        "amount": "12,000",
-        "count": "5",
-        "color": 0xFFFF7DA7,
-        "icon": "calendar_today",
-      },
-      {
-        "title": "Pending Orders",
-        "amount": "38,000",
-        "count": "15",
-        "color": 0xFF62D5F8,
-        "icon": "assignment_outlined",
-      },
-      {
-        "title": "Today Orders",
-        "amount": "5,000",
-        "count": "2",
-        "color": 0xFF58C75E,
-        "icon": "today_outlined",
-      },
-      {
-        "title": "Missed Orders",
-        "amount": "15,000",
-        "count": "3",
-        "color": 0xFFFF913C,
-        "icon": "inventory_outlined",
-      },
+      
     ],
 
     // UPDATED STRUCTURE: List of Subscription Categories
@@ -149,37 +125,11 @@ class _DashboardTabScreenState extends State<DashboardTabScreen> {
     },
 
     "offers": [
-      {
-        "text": "20% OFF",
-        "subText": "On Plumbing Service Pack",
-        "buttonText": "Create",
-         "offerImage":"assets/images/home_cleaning.png",
-        // NOTE: Removed imageAsset as we'll use a fixed background image for all
-        "backgroundColor": 0xFFC4E047,
-      },
-      // Adding more offers to show the scrolling
-      {
-        "text": "30% OFF",
-        "subText": "On AC Service Combo",
-        "buttonText": "Book Now",
-        "offerImage":"assets/images/hair_cut.png",
-        "backgroundColor": 0xFF62D5F8, // Example: Blue for next offer
-      },
-      {
-        "text": "FREE",
-        "subText": "Water Tank Cleaning",
-        "buttonText": "Claim",
-        "offerImage":"assets/images/home_cleaning.png",
-        "backgroundColor": 0xFFFF7DA7, // Example: Pink for third offer
-      },
-    ]
+      
+    ],
   };
 
-
-
-
- 
- void initState() {
+  void initState() {
     super.initState();
 
     var userDataValue = Preferences.getUserDetails();
@@ -187,9 +137,9 @@ class _DashboardTabScreenState extends State<DashboardTabScreen> {
       userData = json.decode(userDataValue);
     }
 
-    callgetProfileAPI();
+    getAllServices();
     //sk
-     _allEarningsData = dashboardData["statistics"]["earnings"]
+    _allEarningsData = dashboardData["statistics"]["earnings"]
         .cast<Map<String, dynamic>>();
 
     // Set initial index to the 'currentMonth' from JSON (e.g., 'May')
@@ -218,13 +168,14 @@ class _DashboardTabScreenState extends State<DashboardTabScreen> {
     });
   }
 
-   @override
+  @override
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
-void _startAutoScroll() {
+
+  void _startAutoScroll() {
     final offers = dashboardData["offers"] as List<dynamic>;
     if (offers.isEmpty) return;
 
@@ -239,7 +190,8 @@ void _startAutoScroll() {
       }
     });
   }
-    void _changeMonth(int direction) {
+
+  void _changeMonth(int direction) {
     setState(() {
       int newIndex = _currentIndex + direction;
       if (newIndex >= 0 && newIndex < _allEarningsData.length) {
@@ -247,7 +199,8 @@ void _startAutoScroll() {
       }
     });
   }
-    // Slice the data to show only 5 months centered around the selected month
+
+  // Slice the data to show only 5 months centered around the selected month
   List<Map<String, dynamic>> _getVisibleData() {
     int centerIndex = _currentIndex;
     int startIndex = max(0, centerIndex - 2);
@@ -259,6 +212,148 @@ void _startAutoScroll() {
     }
 
     return _allEarningsData.sublist(startIndex, endIndex);
+  }
+
+  void getAllServices() async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      try {
+        UtilClass.showProgress(context: context);
+        List<dynamic> results = await Future.wait([
+          Repository.postApiService(EndPoints.profile, {
+            "user_id": userData["user_id"] ?? "4361",
+          }),
+          Repository.postApiService(EndPoints.dashboard, {
+            "provider_id": userData["user_id"] ?? "4361",
+          }),
+           Repository.postApiService(EndPoints.advertise, {
+            "provider_id": userData["user_id"] ?? "4361",
+          }),
+        ]);
+        UtilClass.hideProgress();
+
+        ////Profile//
+        ///
+        /// UtilClass.hideProgress();
+        dynamic parsed = {};
+
+        try {
+          parsed = await json.decode(results[0]);
+          if (parsed["status"] == "valid") {
+            profileDetails = parsed["profile"];
+
+            setState(() {
+              profileDetails = parsed["profile"];
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+
+        ///
+        ///
+        dynamic dparsed = {};
+        try {
+          dparsed = await json.decode(results[1]);
+          if (dparsed["status"] == "valid") {
+            dashBoardDetails = dparsed["summary"];
+
+            dynamic dashboardcards = [
+              {
+                "title": "Current Month",
+                "amount": dashBoardDetails["month_total"],
+                "count": dashBoardDetails["month_count"],
+                "color": 0xFFFF7DA7,
+                "icon": "calendar_today",
+              },
+              {
+                "title": "Pending Orders",
+                "amount": dashBoardDetails["pending_total"],
+                "count": dashBoardDetails["pending_count"],
+                "color": 0xFF62D5F8,
+                "icon": "assignment_outlined",
+              },
+              {
+                "title": "Today Orders",
+                "amount": dashBoardDetails["today_total"],
+                "count": dashBoardDetails["today_count"],
+                "color": 0xFF58C75E,
+                "icon": "today_outlined",
+              },
+              {
+                "title": "Missed Orders",
+                "amount": dashBoardDetails["missed_total"],
+                "count": dashBoardDetails["missed_count"],
+                "color": 0xFFFF913C,
+                "icon": "inventory_outlined",
+              },
+            ];
+
+            dashboardData["statusCards"] = dashboardcards;
+            dashboardData["totalEarnings"] =
+                dashBoardDetails["completed_total"];
+            dashboardData["gbCoins"] = dashBoardDetails["gbcoins"];
+            dashboardData["jobsGoal"] = dashBoardDetails["completed_count"];
+
+            setState(() {
+              dashboardData = dashboardData;
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+
+        //
+
+ dynamic dashparsed = {};
+        try {
+          dashparsed = await json.decode(results[2]);
+          if (dashparsed["status"] == "valid") {
+            
+              dashboardData["offers"] =  dashparsed["advertisements"];
+             setState(() {
+              dashboardData = dashboardData;
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: dashparsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+
+        ///
+        ///
+        ///
+        ///
+        ///
+        ///
+        print('All data fetched:');
+      } catch (e) {
+        UtilClass.hideProgress();
+        print('An error occurred: $e');
+      }
+    } else {
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   void callgetProfileAPI() async {
@@ -297,9 +392,10 @@ void _startAutoScroll() {
       UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
     }
   }
+
   @override
   Widget build(BuildContext context) {
-   final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final isVerified = dashboardData["isVerified"] as bool;
 
@@ -308,298 +404,290 @@ void _startAutoScroll() {
     final selectedMonthName = selectedMonthData["month"];
     final selectedYear = selectedMonthData["year"];
 
- 
- 
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header Container with Gradient and Profile Info
-            Container(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: screenHeight * 0.02,
-                bottom: 16,
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [const Color(0xFF38B03F), const Color(0xFFC7BB47)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header Container with Gradient and Profile Info
+              Container(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: screenHeight * 0.02,
+                  bottom: 16,
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isVerified)
-                    Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Red dot container outside
-                          Container(
-                            width: screenWidth * 0.04,
-                            height: screenWidth * 0.04,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          SizedBox(width: 6),
-                          // PENDING text container
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              "PENDING",
-                              style: TextStyle(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [const Color(0xFF38B03F), const Color(0xFFC7BB47)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!isVerified)
+                      Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Red dot container outside
+                            Container(
+                              width: screenWidth * 0.04,
+                              height: screenWidth * 0.04,
+                              decoration: BoxDecoration(
                                 color: Colors.red,
-                                fontSize: screenWidth * 0.028,
-                                fontWeight: FontWeight.bold,
+                                shape: BoxShape.circle,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  //add pending status
-                  // Profile Row with Notification Icon
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              CircleAvatar(
-                                radius: screenWidth * 0.075,
-                                backgroundImage: AssetImage(
-                                  dashboardData["profileImageUrl"],
-                                ),
+                            SizedBox(width: 6),
+                            // PENDING text container
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
                               ),
-                              // Green Tick for Verified Provider (Below Profile Image)
-                              if (isVerified)
-                                Positioned(
-                                  bottom: -2,
-                                  left: 0,
-                                  right: -21,
-                                  child: Center(
-                                    child: Container(
-                                      // decoration: BoxDecoration(
-                                      //   color: Colors.white,
-                                      //   shape: BoxShape.circle,
-                                      // ),
-                                      child: Icon(
-                                        Icons.check_circle,
-                                        color: green,
-                                        size: screenWidth * 0.05,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          SizedBox(width: screenWidth * 0.03),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                profileDetails["name"] ?? "",
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Text(
+                                "PENDING",
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: screenWidth * 0.048,
+                                  color: Colors.red,
+                                  fontSize: screenWidth * 0.028,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Text(
-                                "AC Technician / Electrician",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: screenWidth * 0.035,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines:
-                                    2, // Allow up to 2 lines before ellipsis
-                                softWrap: true,
-                              ),
-                              // Provider Rating (Only if Verified)
-                              if (isVerified)
-                                Row(
-                                  children: [
-                                    ...List.generate(
-                                      5,
-                                      (index) => Icon(
-                                        index <
-                                                (dashboardData["rating"] ?? 0)
-                                                    .toInt()
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        color: Colors.yellow,
-                                        size: screenWidth * 0.035,
-                                      ),
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      "${dashboardData["rating"] ?? 0}/5",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: screenWidth * 0.035,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
-                      // Notification Icon and PENDING Tag
-                      Row(
-                        children: [
-
-
-                          // Notification Icon
-                          Container(
-                            decoration: BoxDecoration(
+                    //add pending status
+                    // Profile Row with Notification Icon
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                CircleAvatar(
+                                  radius: screenWidth * 0.075,
+                                  backgroundImage: AssetImage(
+                                    dashboardData["profileImageUrl"],
+                                  ),
+                                ),
+                                // Green Tick for Verified Provider (Below Profile Image)
+                                if (isVerified)
+                                  Positioned(
+                                    bottom: -2,
+                                    left: 0,
+                                    right: -21,
+                                    child: Center(
+                                      child: Container(
+                                        // decoration: BoxDecoration(
+                                        //   color: Colors.white,
+                                        //   shape: BoxShape.circle,
+                                        // ),
+                                        child: Icon(
+                                          Icons.check_circle,
+                                          color: green,
+                                          size: screenWidth * 0.05,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            SizedBox(width: screenWidth * 0.03),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  profileDetails["name"] ?? "",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: screenWidth * 0.048,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  "AC Technician / Electrician",
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: screenWidth * 0.035,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines:
+                                      2, // Allow up to 2 lines before ellipsis
+                                  softWrap: true,
+                                ),
+                                // Provider Rating (Only if Verified)
+                                if (isVerified)
+                                  Row(
+                                    children: [
+                                      ...List.generate(
+                                        5,
+                                        (index) => Icon(
+                                          index <
+                                                  (dashboardData["rating"] ?? 0)
+                                                      .toInt()
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          color: Colors.yellow,
+                                          size: screenWidth * 0.035,
+                                        ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "${dashboardData["rating"] ?? 0}/5",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: screenWidth * 0.035,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        // Notification Icon and PENDING Tag
+                        Row(
+                          children: [
+                            // Notification Icon
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                onPressed: () {},
+                                icon: Icon(
+                                  Icons.notifications,
+                                  color: green,
+                                  size: screenWidth * 0.09,
+                                ),
+                                padding: EdgeInsets.all(8),
+                                constraints: BoxConstraints(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    // Total Earnings Card
+                    _buildTotalEarningsCard(screenWidth),
+                    SizedBox(height: screenHeight * 0.015),
+                    // Location Row
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        SizedBox(width: screenWidth * 0.01),
+                        Expanded(
+                          child: Text(
+                            dashboardData["location"],
+                            style: const TextStyle(
                               color: Colors.white,
-                              shape: BoxShape.circle,
+                              fontSize: 12,
                             ),
-                            child: IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Icons.notifications,
-                                color: green,
-                                size: screenWidth * 0.09,
-                              ),
-                              padding: EdgeInsets.all(8),
-                              constraints: BoxConstraints(),
-                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-                  // Total Earnings Card
-                  _buildTotalEarningsCard(screenWidth),
-                  SizedBox(height: screenHeight * 0.015),
-                  // Location Row
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      SizedBox(width: screenWidth * 0.01),
-                      Expanded(
-                        child: Text(
-                          dashboardData["location"],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
+                        ),
+                        const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: screenHeight * 0.015),
+                    // Job Calendar and QR Code Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.calendar_month,
+                            label: "My job calendar",
+                            onPressed: () {},
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: screenHeight * 0.015),
-                  // Job Calendar and QR Code Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.calendar_month  ,
-                          label: "My job calendar",
-                          onPressed: () {},
+                        SizedBox(width: screenWidth * 0.03),
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.qr_code,
+                            label: "Show my QR code",
+                            onPressed: () {},
+                          ),
                         ),
-                      ),
-                      SizedBox(width: screenWidth * 0.03),
-                      Expanded(
-                        child: _buildActionButton(
-                          icon: Icons.qr_code,
-                          label: "Show my QR code",
-                          onPressed: () {},
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.02),
-
-            // Status Cards Grid
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: screenWidth * 0.04,
-                  mainAxisSpacing: screenHeight * 0.02,
-                  childAspectRatio: 1.5,
+                      ],
+                    ),
+                  ],
                 ),
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: dashboardData["statusCards"].length,
-                itemBuilder: (context, index) {
-                  var card = dashboardData["statusCards"][index];
-                  return _buildStatusCard(card, screenWidth);
-                },
               ),
-            ),
-            SizedBox(height: screenHeight * 0.03),
+              SizedBox(height: screenHeight * 0.02),
 
-            // Current Subscriptions Section
-            _buildCurrentSubscriptionsSection(screenWidth, screenHeight),
-            SizedBox(height: screenHeight * 0.03),
+              // Status Cards Grid
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: screenWidth * 0.04,
+                    mainAxisSpacing: screenHeight * 0.02,
+                    childAspectRatio: 1.5,
+                  ),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: dashboardData["statusCards"].length,
+                  itemBuilder: (context, index) {
+                    var card = dashboardData["statusCards"][index];
+                    return _buildStatusCard(card, screenWidth);
+                  },
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.03),
 
-            // Statistics Graph
-            _buildStatisticsGraph(
-              screenWidth,
-              screenHeight,
-              _getVisibleData(),
-              selectedMonthName,
-              selectedYear,
-              _changeMonth,
-              _currentIndex > 0, // canMoveBack
-              _currentIndex < _allEarningsData.length - 1, // canMoveForward
-            ),
-            SizedBox(height: screenHeight * 0.03),
+              // Current Subscriptions Section
+              _buildCurrentSubscriptionsSection(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.03),
 
-            // Offers Card Section
-           // _buildOffersSection(screenWidth, screenHeight),
-           // SizedBox(height: screenHeight * 0.02),
-            _buildOffersCarousel(screenWidth, screenHeight),
-            SizedBox(height:screenHeight * 0.015),
-            _buildPaginationDots(),
-           SizedBox(height:screenHeight * 0.015),
-          ],
+              // Statistics Graph
+              _buildStatisticsGraph(
+                screenWidth,
+                screenHeight,
+                _getVisibleData(),
+                selectedMonthName,
+                selectedYear,
+                _changeMonth,
+                _currentIndex > 0, // canMoveBack
+                _currentIndex < _allEarningsData.length - 1, // canMoveForward
+              ),
+              SizedBox(height: screenHeight * 0.03),
+
+              // Offers Card Section
+              // _buildOffersSection(screenWidth, screenHeight),
+              // SizedBox(height: screenHeight * 0.02),
+              _buildOffersCarousel(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.015),
+              _buildPaginationDots(),
+              SizedBox(height: screenHeight * 0.015),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
-
-
-  
   Widget statusCard(String amount, String title, Color color) {
     return Container(
       height: 90, // Add this line for height
@@ -719,7 +807,7 @@ void _startAutoScroll() {
                             ),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -727,7 +815,6 @@ void _startAutoScroll() {
                   // Price
                   RichText(
                     text: TextSpan(
-
                       children: <TextSpan>[
                         const TextSpan(
                           text: "₹ ",
@@ -805,10 +892,7 @@ void _startAutoScroll() {
         label: Text(
           label,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.black87,
-          ),
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
@@ -897,7 +981,6 @@ void _startAutoScroll() {
                 ),
               ),
               _getImageFromString(card["title"] as String, screenWidth * 0.12),
-
             ],
           ),
           Text(
@@ -1253,8 +1336,6 @@ void _startAutoScroll() {
       ),
     );
   }
-
-
 
   Widget _buildStatisticsGraph(
     double screenWidth,
@@ -1633,7 +1714,7 @@ void _startAutoScroll() {
 
   // --- Core Logic: Offer Carousel with Image Background ---
   // --- Core Logic: Offer Carousel with Dynamic Image ---
-// --- Core Logic: Offer Carousel with Dynamic Image and 40% Width ---
+  // --- Core Logic: Offer Carousel with Dynamic Image and 40% Width ---
   // --- Core Logic: Offer Carousel with Dynamic Image and 80% Height ---
   Widget _buildOffersCarousel(double screenWidth, double screenHeight) {
     final offers = dashboardData["offers"] as List<dynamic>;
@@ -1657,7 +1738,9 @@ void _startAutoScroll() {
         itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];
-          final String imagePath = offer["offerImage"] ?? 'assets/images/default_offer.png'; // Get dynamic path
+          final String imagePath =
+              offer["advertise"] ??
+              'assets/images/default_offer.png'; // Get dynamic path
 
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
@@ -1668,7 +1751,8 @@ void _startAutoScroll() {
               ),
               decoration: BoxDecoration(
                 // Use background color from JSON
-                color: Color(offer["backgroundColor"] as int),
+                // ignore: deprecated_member_use
+                color:Color((math.Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -1684,60 +1768,70 @@ void _startAutoScroll() {
                           children: [
                             Flexible(
                               child: Text(
-                                offer["text"],
+                                offer["title"],
                                 style: TextStyle(
-                                    color: textOrange,
-                                    fontSize: screenWidth * 0.055,
-                                    fontWeight: FontWeight.bold),
+                                  color: textOrange,
+                                  fontSize: screenWidth * 0.055,
+                                  fontWeight: FontWeight.bold,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 4),
                             // Flame icon (Orange)
-                            const Icon(Icons.local_fire_department,
-                                color: textOrange, size: 18),
+                            const Icon(
+                              Icons.local_fire_department,
+                              color: textOrange,
+                              size: 18,
+                            ),
                           ],
                         ),
                         SizedBox(height: screenHeight * 0.005),
                         Text(
-                          offer["subText"],
+                          offer["sub_title"],
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: screenWidth * 0.035,
-                              fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: screenWidth * 0.035,
+                            fontWeight: FontWeight.w600,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(height: screenHeight * 0.005),
-                        Text(
-                          "Let's Create your package",
-                          style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: screenWidth * 0.028),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        // Text(
+                        //   "Let's Create your package",
+                        //   style: TextStyle(
+                        //     color: Colors.white70,
+                        //     fontSize: screenWidth * 0.028,
+                        //   ),
+                        //   maxLines: 1,
+                        //   overflow: TextOverflow.ellipsis,
+                        // ),
                         SizedBox(height: screenHeight * 0.01),
-                        SizedBox(
-                          height: screenHeight * 0.04,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: textOrange,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              elevation: 0,
-                            ),
-                            child: Text(
-                              offer["buttonText"],
-                              style: TextStyle(
-                                  fontSize: screenWidth * 0.032,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ),
+                        // SizedBox(
+                        //   height: screenHeight * 0.04,
+                        //   child: ElevatedButton(
+                        //     onPressed: () {},
+                        //     style: ElevatedButton.styleFrom(
+                        //       backgroundColor: Colors.white,
+                        //       foregroundColor: textOrange,
+                        //       shape: RoundedRectangleBorder(
+                        //         borderRadius: BorderRadius.circular(8),
+                        //       ),
+                        //       padding: const EdgeInsets.symmetric(
+                        //         horizontal: 16,
+                        //       ),
+                        //       elevation: 0,
+                        //     ),
+                        //     child: Text(
+                        //      "Create",
+                        //       style: TextStyle(
+                        //         fontSize: screenWidth * 0.032,
+                        //         fontWeight: FontWeight.w600,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
@@ -1754,8 +1848,9 @@ void _startAutoScroll() {
                       ),
                       alignment: Alignment.bottomRight,
                       child: FractionallySizedBox(
-                        heightFactor: 0.99, // Set image height to 80% of the available vertical space
-                        child: Image.asset(
+                        heightFactor:
+                            0.99, // Set image height to 80% of the available vertical space
+                        child: Image.network(
                           imagePath, // Dynamic image path from JSON
                           fit: BoxFit.fitHeight,
                           errorBuilder: (context, error, stackTrace) {
@@ -1764,7 +1859,11 @@ void _startAutoScroll() {
                                 color: Colors.black.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(Icons.error, color: Colors.white, size: screenWidth * 0.12),
+                              child: Icon(
+                                Icons.error,
+                                color: Colors.white,
+                                size: screenWidth * 0.12,
+                              ),
                             );
                           },
                         ),
@@ -1789,7 +1888,7 @@ void _startAutoScroll() {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
         offers.length,
-            (index) => AnimatedContainer(
+        (index) => AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           margin: const EdgeInsets.symmetric(horizontal: 4.0),
           height: 6.0,
@@ -1802,6 +1901,4 @@ void _startAutoScroll() {
       ),
     );
   }
-
- 
 }

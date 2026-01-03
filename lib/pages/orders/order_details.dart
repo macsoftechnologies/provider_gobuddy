@@ -7,7 +7,10 @@ import '../../utils/config.dart';
 import 'package:image_picker/image_picker.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
-  const OrderDetailsScreen({Key? key}) : super(key: key);
+
+ final dynamic order;
+  const OrderDetailsScreen({super.key, required this.order});
+
 
   @override
   State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
@@ -493,15 +496,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           /// LEFT COLUMN (Image + Status)
           Column(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  orderData["imageUrl"],
-                  width: size.width * 0.2,
-                  height: size.width * 0.2,
-                  fit: BoxFit.cover,
-                ),
-              ),
+              // ClipRRect(
+              //   borderRadius: BorderRadius.circular(12),
+              //   child: Image.network(
+              //     orderData["imageUrl"],
+              //     width: size.width * 0.2,
+              //     height: size.width * 0.2,
+              //     fit: BoxFit.cover,
+              //   ),
+              // ),
               SizedBox(height: size.height * 0.01),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -510,7 +513,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  orderData["status"],
+                  widget.order["status"],
                   style: const TextStyle(
                     color: Colors.blue,
                     fontWeight: FontWeight.w500,
@@ -534,7 +537,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   ),
                 ),
                 Text(
-                  "Order id: ${orderData["orderId"]}",
+                  "Order id: ${widget.order["id"]}",
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -548,7 +551,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        orderData["location"],
+                       widget.order["location"],
                         style: TextStyle(fontSize: size.width * 0.035),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -562,17 +565,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     Icon(Icons.calendar_today, size: size.width * 0.04, color: Colors.black54),
                     SizedBox(width: 4),
                     Text(
-                      orderData["dateTime"],
+                       widget.order["updated_at"],
                       style: TextStyle(fontSize: size.width * 0.035),
                     ),
                   ],
                 ),
                 SizedBox(height: size.height * 0.005),
 
-                Text(
-                  "Order id: ${orderData["orderId"]}",
-                  style: TextStyle(fontSize: size.width * 0.035, color: Colors.black87),
-                ),
+                // Text(
+                //   "Order id: ${orderData["orderId"]}",
+                //   style: TextStyle(fontSize: size.width * 0.035, color: Colors.black87),
+                // ),
 
                 SizedBox(height: size.height * 0.01),
 
@@ -581,7 +584,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "₹${orderData["price"]}",
+                      "₹${widget.order["total_amount"]}",
                       style: TextStyle(
                         fontSize: size.width * 0.045,
                         fontWeight: FontWeight.bold,
@@ -661,12 +664,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   fontWeight: FontWeight.bold,
                   fontSize: size.width * 0.045)),
           SizedBox(height: size.height * 0.01),
-          Text("Name: ${orderData["customerName"]}",
+          Text("Name: ${widget.order["name"]}",
               style: TextStyle(fontSize: size.width * 0.04)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Phone Number: ${orderData["phoneNumber"]}",
+              Text("Phone Number: ${widget.order["phone_number"]}",
                   style: TextStyle(fontSize: size.width * 0.04)),
               const Icon(Icons.call, color: Colors.green, size: 20.0),
             ],
@@ -674,9 +677,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Alternative Number: ${orderData["altPhoneNumber"]}",
+              Text("Email: ${widget.order["email"]}",
                   style: TextStyle(fontSize: size.width * 0.04)),
-              const Icon(Icons.call, color: Colors.green, size: 20.0),
+              const Icon(Icons.email, color: Colors.green, size: 20.0),
             ],
           ),
           SizedBox(height: size.height * 0.01),

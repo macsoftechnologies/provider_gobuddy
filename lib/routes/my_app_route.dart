@@ -82,7 +82,6 @@ class MyAppRouteState extends State<MyAppRoute> {
         Config.requestToolRouteName: (ctx) =>  RequestToolScreen(),
         //Config.myOrdersRouteName: (ctx) =>  MyOrdersScreen(),
         Config.myOrdersRouteName: (ctx) =>  MyOrdersScreen(),
-        Config.orderDetailsRouteName: (ctx) =>  OrderDetailsScreen(),//
         Config.jobCalendarRouteName: (ctx) =>  JobCalendarScreen(),//JobCalendarScreen
         Config.notificationsRouteName: (ctx) =>  NotificationsScreen(),
         Config.customerReviewsRouteName: (ctx) =>  CustomerReviewsScreen(),//customerReviewsRouteName
@@ -104,7 +103,16 @@ class MyAppRouteState extends State<MyAppRoute> {
 
       
       onGenerateRoute: (settings) {
-
+       
+ if (settings.name == Config.orderDetailsRouteName) {
+          final args = settings.arguments as Map<String, dynamic>;
+         
+          return MaterialPageRoute(
+            builder: (_) => OrderDetailsScreen(
+              order: args ?? {}
+            ),
+          );
+        }
          if (settings.name == Config.PlanSummaryRouteName) {
           final args = settings.arguments as Map<String, dynamic>;
          

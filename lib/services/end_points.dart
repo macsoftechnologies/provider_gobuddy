@@ -12,6 +12,9 @@ class EndPoints {
       "${newbaseUrl}onetimeregistration";
   static const String newlogin = "${newbaseUrl}newlogin";
   static const String profile = "${newbaseUrl}profile";
+    static const String dashboard = "${newbaseUrl}dashboard";
+ static const String advertise = "${newbaseUrl}getprovideradvertisements";
+    
   static const String updateProfile = "${newbaseUrl}update_profile";
   static const String tools = "${newbaseUrl}requesttools";
   static const String addrequesttool = "${newbaseUrl}addrequesttool";
@@ -39,4 +42,7 @@ class EndPoints {
 
   static const String subscriptionorders =
       "${newbaseUrl}get_provider_subscriptionorders";
+
+
+       static const String getOrders = "${newbaseUrl}getMyOrders";
 }

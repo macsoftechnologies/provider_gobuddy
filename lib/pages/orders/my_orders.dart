@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/util_class.dart';
 import '../../utils/config.dart';
 import '../../utils/my_colors.dart';
 
@@ -85,9 +89,23 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Map<int, int> countdowns = {}; // orderId -> seconds remaining
   Timer? timer;
 
+   dynamic userData = {};
+ 
+   List<dynamic> orders = [];
+   dynamic selectType = "pending";
+
   @override
   void initState() {
     super.initState();
+
+ var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
+      userData = json.decode(userDataValue);
+    }
+callOrdersPI(selectType);
+
+
+
     final data = jsonDecode(jsonData);
     allOrders = data["orders"];
 
@@ -115,6 +133,49 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   void dispose() {
     timer?.cancel();
     super.dispose();
+  }
+
+
+  void callOrdersPI(tab) async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.getOrders, {
+            "user_id": "4434" ?? "4361",
+             "status": tab.toLowerCase() ?? "pending",
+          }).then((value) async {
+        UtilClass.hideProgress();
+         
+        dynamic parsed = await json.decode(value);
+        try {
+        
+          if (parsed["status"] == "valid") {
+          
+            setState(() {
+
+              selectType = tab.toLowerCase();
+              orders = parsed["data"];
+            });
+
+          
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+       
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   @override
@@ -174,7 +235,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     child: GestureDetector(
                       onTap: () {
                         setState(() {
-                          selectedTab = tab;
+                          
+                           setState(() {
+            
+               selectedTab = tab;
+            });
+            callOrdersPI(tab);
+                         
                         });
                       },
                       child: Container(
@@ -202,7 +269,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
               // Orders List
               Expanded(
-                child: filteredOrders.isEmpty
+                child: orders.isEmpty
                     ? const Center(
                   child: Text(
                     "No orders found",
@@ -211,9 +278,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                   ),
                 )
                     : ListView.builder(
-                  itemCount: filteredOrders.length,
+                  itemCount: orders.length,
                   itemBuilder: (context, index) {
-                    final order = filteredOrders[index];
+                    final order = orders[index];
                     return _buildOrderCard(order, deviceWidth);
                   },
                 ),
@@ -232,6 +299,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       GestureDetector(
         onTap: (){
           Navigator.of(context).pushReplacementNamed(
+          
+             arguments: order,
             Config.orderDetailsRouteName, //loginRouteName dashboardcRouteName
           );
 
@@ -257,24 +326,24 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      order["image"],
-                      width: deviceWidth * 0.25,
-                      height: deviceWidth * 0.25,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                  // ClipRRect(
+                  //   borderRadius: BorderRadius.circular(8),
+                  //   child: Image.asset(
+                  //     order["image"],
+                  //     width: deviceWidth * 0.25,
+                  //     height: deviceWidth * 0.25,
+                  //     fit: BoxFit.cover,
+                  //   ),
+                  // ),
                   SizedBox(width: deviceWidth * 0.04),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(order["title"],
+                        Text("Order Number :  ${order["id"]}",
                             style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.bold)),
-                        Text(order["service"],
+                        Text(  "Services",
                             style: const TextStyle(color: Colors.grey)),
                         const SizedBox(height: 6),
                         Row(
@@ -283,7 +352,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                                 size: 16, color: Colors.black54),
                             const SizedBox(width: 4),
                             Expanded(
-                              child: Text(order["address"],
+                              child: Text(order["landmark"],
                                   style: const TextStyle(fontSize: 13),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis),
@@ -296,7 +365,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                             const Icon(Icons.calendar_today,
                                 size: 16, color: Colors.black54),
                             const SizedBox(width: 4),
-                            Text("${order["date"]}   ${order["time"]}",
+                            Text("${order["updated_at"]}",
                                 style: const TextStyle(fontSize: 13)),
                           ],
                         ),
@@ -308,10 +377,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               const Divider(),
 
               // Bottom UI depends on Status
-              if (status == "Pending") _buildPendingUI(order),
-              if (status == "Open") _buildOpenUI(order),
-              if (status == "Completed") _buildCompletedUI(order),
-              if (status == "Cancelled") _buildCancelledUI(order),
+              if (selectType == "pending") _buildPendingUI(order),
+              if (selectType == "open") _buildOpenUI(order),
+              if (selectType == "completed") _buildCompletedUI(order),
+              if (selectType == "cancelled") _buildCancelledUI(order),
             ],
           ),
         ),
@@ -333,7 +402,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           onPressed: () {},
           child: const Text("Start"),
         ),
-        Text("₹ ${order["price"]}",
+        Text("₹ ${order["total_amount"]}",
             style:
             const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ],
@@ -386,7 +455,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     color: Colors.orange,
                     fontWeight: FontWeight.w500)),
             const SizedBox(width: 12),
-            Text("₹ ${order["price"]}",
+            Text("₹ ${order["total_amount"]}",
                 style: const TextStyle(
                     fontSize: 16, fontWeight: FontWeight.bold)),
           ],
@@ -410,7 +479,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           onPressed: () {},
           child: const Text("Completed",style: TextStyle(color: Colors.green),),
         ),
-        Text("₹ ${order["price"]}",
+        Text("₹ ${order["total_amount"]}",
             style:
             const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ],
