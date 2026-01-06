@@ -1,16 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gobuddy/data/preferences.dart';
+import 'package:gobuddy/services/end_points.dart';
+import 'package:gobuddy/services/repository.dart';
+import 'package:gobuddy/utils/util_class.dart';
 
 import '../../components/button.dart';
 import '../../utils/config.dart';
 import 'package:image_picker/image_picker.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
-
- final dynamic order;
+  final dynamic order;
   const OrderDetailsScreen({super.key, required this.order});
-
 
   @override
   State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
@@ -18,93 +21,21 @@ class OrderDetailsScreen extends StatefulWidget {
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   late Map<String, dynamic> orderData;
+  dynamic orderDetails = {};
   final TextEditingController _orderCodeController = TextEditingController();
-  int _selectedPaymentIndex = -1;
+  int _selectedPaymentIndex = 0;
   bool _isVerified = false; // 🔹 New flag for Verify button state
-
+  bool _isloaderservice = false;
   // New variables for extra service charge
- 
+
   ////////services
-   late Map<String, dynamic> serviceData;
+  late Map<String, dynamic> serviceData;
   final TextEditingController _serviceCodeController = TextEditingController();
   // ---------- SERVICES LIST (MULTIPLE SERVICE ORDERS) ----------
-  List<Map<String, dynamic>> servicesData = [
-    {
-      "serviceTitle": "AC Installation",
-      "serviceType": "AC Service",
-      "location": "Sheela Nagar, Gajuwaka, Visakhapatnam",
-      "dateTime": "10/8/2024  12:00 AM",
-      "serviceId": "#356234",
-      "price": 599.0,
-      "travelingCharge": 60.0,
-      "status": "In Progress",
-      "customerName": "D. Viswak Varma",
-      "phoneNumber": "9876543210",
-      "altPhoneNumber": "9075643210",
-      "is_photos_upload": false,
-      "imageUrl":
-          "https://img.freepik.com/free-photo/man-installing-air-conditioner_53876-13823.jpg",
-      "beforeImages": [],
-      "afterImages": [],
-    },
-      {
-      "serviceTitle": "AC Installation",
-      "serviceType": "AC Service",
-      "location": "Sheela Nagar, Gajuwaka, Visakhapatnam",
-      "dateTime": "10/8/2024  12:00 AM",
-      "serviceId": "#356234",
-      "price": 599.0,
-      "travelingCharge": 60.0,
-      "status": "In Progress",
-      "customerName": "D. Viswak Varma",
-      "phoneNumber": "9876543210",
-      "altPhoneNumber": "9075643210",
-      "is_photos_upload": false,
-      "imageUrl":
-          "https://img.freepik.com/free-photo/man-installing-air-conditioner_53876-13823.jpg",
-      "beforeImages": [],
-      "afterImages": [],
-    },
-    {
-      "serviceTitle": "Refrigerator Repair",
-      "serviceType": "Fridge Service",
-      "location": "Madhurawada, Visakhapatnam",
-      "dateTime": "10/8/2024  02:30 PM",
-      "serviceId": "#789654",
-      "price": 799.0,
-      "travelingCharge": 50.0,
-      "status": "Pending",
-      "customerName": "Kumar",
-      "phoneNumber": "9000000001",
-      "altPhoneNumber": "9000099990",
-      "is_photos_upload": false,
-      "imageUrl":
-          "https://img.freepik.com/free-photo/man-repairing-refrigerator_329181-2206.jpg",
-      "beforeImages": [],
-      "afterImages": [],
-    },
-    {
-      "serviceTitle": "Washing Machine Repair",
-      "serviceType": "Washer Service",
-      "location": "Gajuwaka, Visakhapatnam",
-      "dateTime": "11/8/2024  10:00 AM",
-      "serviceId": "#564789",
-      "price": 699.0,
-      "travelingCharge": 40.0,
-      "status": "Completed",
-      "customerName": "Ramesh",
-      "phoneNumber": "9888876543",
-      "altPhoneNumber": "9000088880",
-      "is_photos_upload": false,
-      "imageUrl":
-          "https://img.freepik.com/free-photo/man-fixing-washing-machine_329181-1429.jpg",
-      "beforeImages": [],
-      "afterImages": [],
-    },
-  ];
+  List<dynamic> servicesData = [];
 
   int selectedServiceIndex = 0;
-
+  dynamic userData = {};
   List<Map<String, dynamic>> _extraCharges = [];
   double _extraServiceTotal = 0.0;
 
@@ -117,9 +48,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     if (pickedFile != null) {
       setState(() {
         if (isBefore) {
-          servicesData[selectedServiceIndex]["beforeImages"].add(File(pickedFile.path));
+          servicesData[selectedServiceIndex]["beforeImages"].add(
+            File(pickedFile.path),
+          );
         } else {
-          servicesData[selectedServiceIndex]["afterImages"].add(File(pickedFile.path));
+          servicesData[selectedServiceIndex]["afterImages"].add(
+            File(pickedFile.path),
+          );
         }
       });
     }
@@ -130,24 +65,191 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   void initState() {
     super.initState();
     // Simulating fetched JSON data
-    const String jsonData = '''
-    {
-      "serviceTitle": "AC Installation",
-      "serviceType": "AC Service",
-      "location": "Sheela Nagar, Gajuwaka, Visakhapatnam",
-      "dateTime": "10/8/2024  12:00 AM",
-      "orderId": "#356234",
-      "price": 599.0,
-      "travelingCharge": 60.0,
-      "status": "In Progress",
-      "customerName": "D. Viswak Varma",
-      "phoneNumber": "9876543210",
-      "altPhoneNumber": "9075643210",
-      "imageUrl": "https://img.freepik.com/free-photo/man-installing-air-conditioner_53876-13823.jpg"
+
+    var userDataValue = Preferences.getUserDetails();
+    if (userDataValue != null) {
+      userData = json.decode(userDataValue);
     }
-    ''';
-    orderData = json.decode(jsonData);
-     serviceData = servicesData[0];
+
+    callOrdersPI();
+  }
+
+  void submitOrdersPI() async {
+    print(_extraCharges);
+
+    final List<dynamic> labels = _extraCharges
+        .map((city) => city["description"])
+        .toList();
+    final List<dynamic> amounts = _extraCharges
+        .map((city) => city["amount"])
+        .toList();
+    var finalData = {
+      "job_calender_id": widget.order["id"],
+      "payment_type": _selectedPaymentIndex==0?"phonepay":"cash",
+      "travelling_charges": "50",
+      "add_extra_charges": amounts,
+      "reason_for_extracharges": labels,
+    };
+
+    bool isallimages = true;
+
+    List<dynamic> finalServices = [];
+    for (int i = 0; i < servicesData.length; i++) {
+      List<dynamic> beforeImages = servicesData[i]["beforeImages"];
+      List<dynamic> afterImages = servicesData[i]["afterImages"];
+      List<MultipartFile> multipartFilesbefore = [];
+      List<MultipartFile> multipartFilesafter = [];
+      if (afterImages.isNotEmpty && beforeImages.isNotEmpty) {
+        multipartFilesbefore = beforeImages.map((image) {
+          // Extract the filename from the path
+          String fileName = image.path.split('/').last;
+          return MultipartFile.fromFileSync(
+            image.path,
+            filename: "before$fileName",
+            // contentType: MediaType('image', 'jpeg'), // Optional: specify media type
+          );
+        }).toList();
+
+        multipartFilesafter = afterImages.map((image) {
+          // Extract the filename from the path
+          String fileName = image.path.split('/').last;
+          return MultipartFile.fromFileSync(
+            image.path,
+            filename: "after$fileName",
+            // contentType: MediaType('image', 'jpeg'), // Optional: specify media type
+          );
+        }).toList();
+      } else {
+        isallimages = false;
+        // UtilClass.showAlertDialog(context: context, message:"P[lease]");
+
+        //         return;
+      }
+
+      if (!isallimages) {
+        UtilClass.showAlertDialog(
+          context: context,
+          message: "Please upload all services required Images",
+        );
+        return;
+      }
+
+      List<dynamic> combinedList = [
+        ...multipartFilesbefore,
+        ...multipartFilesafter,
+      ];
+
+      var formData = FormData.fromMap({
+        "provider_id": "4434",
+        "images[]": combinedList,
+        "service_id": servicesData[i]["service_id"],
+        'order_id': "12",
+      });
+
+      finalServices.add(
+        Repository.postimagesApiService(EndPoints.addImages, formData),
+      );
+    }
+
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      List<dynamic> resultsd = await Future.wait(
+        finalServices.cast<Future<dynamic>>(),
+      );
+
+      print(resultsd);
+      print("completed");
+      //  UtilClass.showAlertDialog(context: context, message:"uplaoded");
+
+      UtilClass.showProgress(context: context);
+
+      await Repository.postApiServiceWithJson(
+        EndPoints.submitDetails,
+        finalData,
+      ).then((value) async {
+        UtilClass.hideProgress();
+
+        dynamic parsed = value;
+        try {
+          if (parsed["status"] == "success") {
+            Navigator.pushNamed(
+              // ignore: use_build_context_synchronously
+              context,
+              Config.myOrdersRouteName,
+            );
+            Future.delayed(const Duration(seconds: 1), () {
+              UtilClass.showAlertDialog(
+                // ignore: use_build_context_synchronously
+                context: context,
+                message: parsed["message"],
+              );
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  void callOrdersPI() async {
+    print(widget.order);
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.orderDetails, {
+        "order_id": widget.order["id"],
+      }).then((value) async {
+        UtilClass.hideProgress();
+
+        dynamic parsed = await json.decode(value);
+        try {
+          if (parsed["status"] == true) {
+            for (int i = 0; i < parsed["data"]["services"].length; i++) {
+              parsed["data"]["services"][i]["beforeImages"] = [];
+              parsed["data"]["services"][i]["afterImages"] = [];
+              parsed["data"]["services"][i]["is_photos_upload"] = false;
+            }
+
+            setState(() {
+              orderDetails = parsed["data"];
+              servicesData = parsed["data"]["services"];
+              serviceData = parsed["data"]["services"][0];
+            });
+
+            setState(() {
+              _isloaderservice = true;
+            });
+            ;
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
   }
 
   // Helper method to safely convert dynamic values to double
@@ -165,19 +267,28 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     // final totalAmount = _parseDouble(orderData["price"]) +
     //     _parseDouble(orderData["travelingCharge"]) +
     //     _extraServiceTotal;
-        ////ser
-        double servicesTotal = 0;
+    ////ser
+    ///
+    ///
+    ///
+    ///if
+    ///
+    ///
+    ///
+    ///
+
+    double servicesTotal = 0;
     for (var item in servicesData) {
       servicesTotal += _parseDouble(item["price"]);
     }
 
-    double travelingTotal = 0;
-    for (var item in servicesData) {
-      travelingTotal += _parseDouble(item["travelingCharge"]);
-    }
+    // double travelingTotal = 0;
+    // for (var item in servicesData) {
+    //   travelingTotal += _parseDouble(item["travelingCharge"]);
+    // }
 
-    final totalAmount = servicesTotal + travelingTotal + _extraServiceTotal;
-        //ser end
+    final totalAmount = servicesTotal + _extraServiceTotal;
+    //ser end
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -196,112 +307,115 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               // ignore: use_build_context_synchronously
               context,
               Config.myOrdersRouteName,
-
-            )
+            ),
           },
         ),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(size.width * 0.04),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildOrderCard(size),
-            SizedBox(height: size.height * 0.02),
-            _buildCustomerDetails(size),
-            // SizedBox(height: size.height * 0.02),
-            // _buildOrderCodeSection(size),
-            SizedBox(height: size.height * 0.02),
+      body: _isloaderservice
+          ? SingleChildScrollView(
+              padding: EdgeInsets.all(size.width * 0.04),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildOrderCard(size),
+                  SizedBox(height: size.height * 0.02),
+                  _buildCustomerDetails(size),
+                  // SizedBox(height: size.height * 0.02),
+                  // _buildOrderCodeSection(size),
+                  SizedBox(height: size.height * 0.02),
 
-            //serv
-             // ---------------- SERVICE TABS ----------------
-            Text('Order Have ${servicesData.length} Services',
-             style: TextStyle(
-             fontWeight: FontWeight.bold,
-       
-        fontSize: size.width * 0.045)),
-         SizedBox(height: size.height * 0.01),
-         Card(
-  elevation: 4,
-  margin: EdgeInsets.symmetric(vertical: 10),
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(16),
-  ),
-  child: Container(
-    padding: EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 4,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      children: [
-        _buildServiceTabs(size), // servicesData.length
+                  //serv
+                  // ---------------- SERVICE TABS ----------------
+                  Text(
+                    'Order Have ${servicesData.length} Services',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
 
-        const SizedBox(height: 20),
+                      fontSize: size.width * 0.045,
+                    ),
+                  ),
+                  SizedBox(height: size.height * 0.01),
+                  Card(
+                    elevation: 4,
+                    margin: EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _buildServiceTabs(size), // servicesData.length
 
-        // ---------------- SELECTED SERVICE CARD ----------------
-        _buildSelectedServiceCard(size),
+                          const SizedBox(height: 20),
 
-        const SizedBox(height: 25),
+                          // ---------------- SELECTED SERVICE CARD ----------------
+                          _buildSelectedServiceCard(size),
 
-         Align(
-          alignment: Alignment.centerLeft,
-          child: _buildUploadImageTitle(size),
-        ),
+                          const SizedBox(height: 25),
 
-        const SizedBox(height: 15),
-  Align(
-          alignment: Alignment.centerLeft,
-          child: _imageUploadSection(size),
-        ),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: _buildUploadImageTitle(size),
+                          ),
 
-        const SizedBox(height: 15),
+                          const SizedBox(height: 15),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: _imageUploadSection(size),
+                          ),
 
-        _buildActionButtons(size),
-      ],
-    ),
-  ),
-),
+                          const SizedBox(height: 15),
 
-            const SizedBox(height: 20),
-           
-           //old price
-            _buildPriceDetails(size, totalAmount),
-            SizedBox(height: size.height * 0.03),
-            GradientButton(
-              onPressed: () {
+                          _buildActionButtons(size),
+                        ],
+                      ),
+                    ),
+                  ),
 
-                Navigator.of(context).pushReplacementNamed(
-                  Config.jobCalendarRouteName,
-                );
+                  const SizedBox(height: 20),
 
+                  //old price
+                  _buildPriceDetails(size, totalAmount),
+                  SizedBox(height: size.height * 0.03),
+                  GradientButton(
+                    onPressed: () {
+                      // Navigator.of(context).pushReplacementNamed(
+                      //   Config.jobCalendarRouteName,
+                      // );
 
-              },
-              child: Text(
-                'Submit Details',
-                style: TextStyle(
-                  fontFamily: 'Urbanist',
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: size.width * 0.04,
-                ),
+                      submitOrdersPI();
+                    },
+                    child: Text(
+                      'Submit Details',
+                      style: TextStyle(
+                        fontFamily: 'Urbanist',
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: size.width * 0.04,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-      ),
+            )
+          : Container(),
     );
   }
 
   //cancel order
-    void _showCancelDialog(BuildContext context) {
+  void _showCancelDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -309,26 +423,34 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         final width = MediaQuery.of(context).size.width;
         final height = MediaQuery.of(context).size.height;
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Padding(
-            padding:
-            EdgeInsets.symmetric(horizontal: width * 0.06, vertical: height * 0.03),
+            padding: EdgeInsets.symmetric(
+              horizontal: width * 0.06,
+              vertical: height * 0.03,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Cancel Service ?',
                   style: TextStyle(
-                      fontSize: width * 0.05,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87),
+                    fontSize: width * 0.05,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
                 ),
                 SizedBox(height: height * 0.015),
                 Text(
                   'Are you sure you want to Cancel your service',
                   textAlign: TextAlign.center,
-                  style:
-                  TextStyle(fontSize: width * 0.04, color: Colors.black54, height: 1.4),
+                  style: TextStyle(
+                    fontSize: width * 0.04,
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
                 ),
                 SizedBox(height: height * 0.03),
                 Row(
@@ -338,19 +460,24 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       width: width * 0.3,
                       height: height * 0.055,
                       child: OutlinedButton(
-                       onPressed: ()=> Navigator.pop(context),
+                        onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
-                          side:
-                          BorderSide(color: Colors.grey.shade300, width: 1),
+                          side: BorderSide(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: Text('No',
-                            style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: width * 0.045,
-                                fontWeight: FontWeight.w600)),
+                        child: Text(
+                          'No',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: width * 0.045,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                     SizedBox(
@@ -359,8 +486,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
-                      _showCancelRequestPopup(context);
-                        
+                          _showCancelRequestPopup(context);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
@@ -368,11 +494,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: Text('Yes',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: width * 0.045,
-                                fontWeight: FontWeight.w600)),
+                        child: Text(
+                          'Yes',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: width * 0.045,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -384,7 +513,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       },
     );
   }
-
 
   void _showCancelRequestPopup(BuildContext context) {
     showDialog(
@@ -400,7 +528,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-                horizontal: width * 0.06, vertical: height * 0.03),
+              horizontal: width * 0.06,
+              vertical: height * 0.03,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -445,7 +575,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                       // close popup
+                      // close popup
                       // Navigator.pushReplacementNamed(context, '/nextScreen');
                       // Replace '/nextScreen' with your actual screen route
                     },
@@ -507,13 +637,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               // ),
               SizedBox(height: size.height * 0.01),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade100,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  widget.order["status"],
+                  orderDetails["status"],
                   style: const TextStyle(
                     color: Colors.blue,
                     fontWeight: FontWeight.w500,
@@ -530,14 +663,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                 "Order Details",
+                  "Order Details",
                   style: TextStyle(
                     fontSize: size.width * 0.045,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  "Order id: ${widget.order["id"]}",
+                  "Order id: ${orderDetails["id"]}",
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -547,11 +680,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: size.width * 0.04, color: Colors.black54),
+                    Icon(
+                      Icons.location_on,
+                      size: size.width * 0.04,
+                      color: Colors.black54,
+                    ),
                     SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                       widget.order["location"],
+                        orderDetails["landmark"] ?? orderDetails["location"],
                         style: TextStyle(fontSize: size.width * 0.035),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -562,10 +699,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
                 Row(
                   children: [
-                    Icon(Icons.calendar_today, size: size.width * 0.04, color: Colors.black54),
+                    Icon(
+                      Icons.calendar_today,
+                      size: size.width * 0.04,
+                      color: Colors.black54,
+                    ),
                     SizedBox(width: 4),
                     Text(
-                       widget.order["updated_at"],
+                      orderDetails["updated_at"],
                       style: TextStyle(fontSize: size.width * 0.035),
                     ),
                   ],
@@ -576,7 +717,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 //   "Order id: ${orderData["orderId"]}",
                 //   style: TextStyle(fontSize: size.width * 0.035, color: Colors.black87),
                 // ),
-
                 SizedBox(height: size.height * 0.01),
 
                 /// PRICE & NAVIGATION ICON ROW
@@ -584,13 +724,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "₹${widget.order["total_amount"]}",
+                      "₹${orderDetails["total_amount"]}",
                       style: TextStyle(
                         fontSize: size.width * 0.045,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Icon(Icons.navigation, color: Colors.orange, size: 28),
+                    const Icon(
+                      Icons.navigation,
+                      color: Colors.orange,
+                      size: 28,
+                    ),
                   ],
                 ),
               ],
@@ -606,9 +750,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Enter Order Code",
-            style: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: size.width * 0.045)),
+        Text(
+          "Enter Order Code",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: size.width * 0.045,
+          ),
+        ),
         SizedBox(height: size.height * 0.01),
         Row(
           children: [
@@ -618,7 +766,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 decoration: InputDecoration(
                   hintText: "Enter code",
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
@@ -627,14 +776,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               onPressed: _isVerified
                   ? null
                   : () {
-                setState(() {
-                  _isVerified = true;
-                });
-                print("Order Code: ${_orderCodeController.text}");
-              },
+                      setState(() {
+                        _isVerified = true;
+                      });
+                      print("Order Code: ${_orderCodeController.text}");
+                    },
               style: ElevatedButton.styleFrom(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 backgroundColor: _isVerified ? Colors.green : Colors.blue,
               ),
               child: Text(
@@ -659,26 +809,35 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Customer Details",
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: size.width * 0.045)),
+          Text(
+            "Customer Details",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: size.width * 0.045,
+            ),
+          ),
           SizedBox(height: size.height * 0.01),
-          Text("Name: ${widget.order["name"]}",
-              style: TextStyle(fontSize: size.width * 0.04)),
+          Text(
+            "Name: ${widget.order["name"]}",
+            style: TextStyle(fontSize: size.width * 0.04),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Phone Number: ${widget.order["phone_number"]}",
-                  style: TextStyle(fontSize: size.width * 0.04)),
+              Text(
+                "Phone Number: ${widget.order["phone_number"]}",
+                style: TextStyle(fontSize: size.width * 0.04),
+              ),
               const Icon(Icons.call, color: Colors.green, size: 20.0),
             ],
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Email: ${widget.order["email"]}",
-                  style: TextStyle(fontSize: size.width * 0.04)),
+              Text(
+                "Email: ${widget.order["email"]}",
+                style: TextStyle(fontSize: size.width * 0.04),
+              ),
               const Icon(Icons.email, color: Colors.green, size: 20.0),
             ],
           ),
@@ -689,49 +848,47 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             label: const Text("Send message"),
           ),
 
-           SizedBox(height: size.height * 0.01),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _orderCodeController,
-                decoration: InputDecoration(
-                  hintText: "Enter code",
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+          SizedBox(height: size.height * 0.01),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _orderCodeController,
+                  decoration: InputDecoration(
+                    hintText: "Enter code",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
-            ),
-            SizedBox(width: size.width * 0.03),
-            ElevatedButton(
-              onPressed: _isVerified
-                  ? null
-                  : () {
-                setState(() {
-                  _isVerified = true;
-                });
-                print("Order Code: ${_orderCodeController.text}");
-              },
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                backgroundColor: _isVerified ? Colors.green : Colors.blue,
+              SizedBox(width: size.width * 0.03),
+              ElevatedButton(
+                onPressed: _isVerified
+                    ? null
+                    : () {
+                        setState(() {
+                          _isVerified = true;
+                        });
+                        print("Order Code: ${_orderCodeController.text}");
+                      },
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: _isVerified ? Colors.green : Colors.blue,
+                ),
+                child: Text(
+                  _isVerified ? "Verified" : "Verify",
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
-              child: Text(
-                _isVerified ? "Verified" : "Verify",
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ],
       ),
     );
   }
-
- 
-
-
 
   /// Issue Button
   Widget _buildIssueButton(Size size) {
@@ -766,7 +923,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           // Each service price
           Column(
             children: servicesData.map((service) {
-              return _priceRow(service["serviceTitle"], service["price"]);
+              return _priceRow(
+                service["service_name"],
+                double.parse(service["price"]),
+              );
             }).toList(),
           ),
 
@@ -782,7 +942,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ),
 
           _priceRow("Extra Service charge", null, isAdd: true),
-          _priceRow("Traveling Charge", _parseDouble(orderData["travelingCharge"])),
+          // _priceRow("Traveling Charge", _parseDouble(orderData["travelingCharge"])),
           const Divider(),
           _priceRow("Total Amount", totalAmount, isBold: true),
           SizedBox(height: size.height * 0.02),
@@ -795,8 +955,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Payment via",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  "Payment via",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 _paymentOption(0, "Payment via PhonePe"),
                 _paymentOption(1, "By hand cash"),
               ],
@@ -807,8 +969,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  Widget _priceRow(String title, double? amount,
-      {bool isBold = false, bool isAdd = false}) {
+  Widget _priceRow(
+    String title,
+    double? amount, {
+    bool isBold = false,
+    bool isAdd = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -817,13 +983,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           Text(
             title,
             style: TextStyle(
-                fontWeight: isBold ? FontWeight.bold : FontWeight.normal),
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
           GestureDetector(
             onTap: isAdd
                 ? () {
-              _showAddServiceChargeDialog();
-            }
+                    _showAddServiceChargeDialog();
+                  }
                 : null,
             child: Text(
               isAdd
@@ -852,7 +1019,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.7,
@@ -932,7 +1101,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: () {
                           if (formKey.currentState!.validate()) {
@@ -943,12 +1113,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                             setState(() {
                               _extraCharges.add({
                                 'amount': amount,
-                                'description': description
+                                'description': description,
                               });
                               _extraServiceTotal += amount;
                             });
 
-                            print("Extra Charge Added: ₹$amount, Desc: $description");
+                            print(
+                              "Extra Charge Added: ₹$amount, Desc: $description",
+                            );
                             Navigator.pop(context);
                           }
                         },
@@ -988,7 +1160,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           padding: EdgeInsets.symmetric(vertical: size.height * 0.02),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           // Remove backgroundColor and use foregroundColor for text color
           foregroundColor: Colors.white,
           // Set transparent background to allow the gradient to show
@@ -997,8 +1171,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           elevation: 0,
         ),
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Details Submitted")));
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //     const SnackBar(content: Text("Details Submitted")));
         },
         child: Ink(
           decoration: BoxDecoration(
@@ -1051,7 +1225,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                "Service ${index + 1}",
+                servicesData[index]["service_name"],
                 style: TextStyle(
                   color: isSelected ? Colors.white : Colors.black,
                   fontWeight: FontWeight.w600,
@@ -1071,20 +1245,27 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     return Container(
       padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade300),
-          boxShadow: [
-            BoxShadow(
-                spreadRadius: 2,
-                blurRadius: 5,
-                color: Colors.black.withOpacity(0.06))
-          ]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            spreadRadius: 2,
+            blurRadius: 5,
+            color: Colors.black.withOpacity(0.06),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: Image.network(
-              service["imageUrl"],
+              "https://admin.gobuddyindia.com/assets/images/" +
+                  service["service_image"],
+              errorBuilder: (context, error, stackTrace) {
+                // Returns this widget if the image fails to load
+                return const Icon(Icons.broken_image, size: 50);
+              },
               width: size.width * 0.22,
               height: size.width * 0.22,
               fit: BoxFit.cover,
@@ -1095,35 +1276,47 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(service["serviceTitle"],
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: size.width * 0.043)),
+                Text(
+                  service["service_name"],
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: size.width * 0.043,
+                  ),
+                ),
 
                 SizedBox(height: 6),
 
-                Text(service["location"],
-                    maxLines: 2,
-                    style: TextStyle(fontSize: size.width * 0.035)),
+                Text(
+                  "location",
+                  maxLines: 2,
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
 
                 SizedBox(height: 8),
 
-                Text("₹${service['price']}",
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: size.width * 0.045)),
+                Text(
+                  "₹${service['price']}",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: size.width * 0.045,
+                  ),
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
   Widget _buildUploadImageTitle(Size size) {
-    return Text("Upload Service Images",
-        style: TextStyle(
-            fontWeight: FontWeight.bold, fontSize: size.width * 0.045));
+    return Text(
+      "Upload Service Images",
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: size.width * 0.045,
+      ),
+    );
   }
 
   // ---------------- UPLOAD BOXES ----------------
@@ -1159,8 +1352,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             height: 90,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              image: DecorationImage(
-                  image: FileImage(img), fit: BoxFit.cover),
+              image: DecorationImage(image: FileImage(img), fit: BoxFit.cover),
             ),
           ),
 
@@ -1170,11 +1362,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             width: 90,
             height: 90,
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade400)),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade400),
+            ),
             child: Icon(Icons.add, size: 35, color: Colors.green),
           ),
-        )
+        ),
       ],
     );
   }
@@ -1188,19 +1381,23 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             onPressed: () {
               _showCancelDialog(context);
             },
-            child: const Text("Cancel Service"),
+            child: const Text(
+              "Cancel Service",
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ),
         SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            onPressed: () {},
-            child: const Text("Service Completed"),
-          ),
-        ),
+        // Expanded(
+        //   child: ElevatedButton(
+        //     style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+        //     onPressed: () {},
+        //     child: const Text("Service Completed"),
+        //   ),
+        // ),
       ],
     );
   }
+
   //services end
 }
