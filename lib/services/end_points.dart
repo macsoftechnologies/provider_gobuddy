@@ -48,4 +48,10 @@ class EndPoints {
        static const String orderDetails = "${newbaseUrl}viewOrderDetails";
        static const String addImages = "${newbaseUrl}add_provider_gallery";
        static const String submitDetails = "${newbaseUrl}orderchargessubmitted";
+       static const String verifyCode = "${newbaseUrl}verify_code";
+       static const String cancelOrders = "${newbaseUrl}cancelorders";
+
+      
+
+       
 }

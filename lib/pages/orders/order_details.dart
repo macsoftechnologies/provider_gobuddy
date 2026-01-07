@@ -6,7 +6,7 @@ import 'package:gobuddy/data/preferences.dart';
 import 'package:gobuddy/services/end_points.dart';
 import 'package:gobuddy/services/repository.dart';
 import 'package:gobuddy/utils/util_class.dart';
-
+import '../../models/cancel_reasons.dart';
 import '../../components/button.dart';
 import '../../utils/config.dart';
 import 'package:image_picker/image_picker.dart';
@@ -39,6 +39,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<Map<String, dynamic>> _extraCharges = [];
   double _extraServiceTotal = 0.0;
 
+
+  final Map<String, dynamic> cancelReasonsJson = {
+    "cancelReasons": [
+      {"id": "1", "reason": "Changed my mind"},
+      {"id": "2", "reason": "Service not required"},
+      {"id": "3", "reason": "Price is high"},
+      {"id": "4", "reason": "Booked by mistake"},
+      {"id": "999", "reason": "Others"}, // <-- always last
+    ],
+  };
+
+  GetCancelOrderReasons? cancelReasonsData;
+
   // ------------------ IMAGE PICKER ------------------
   final ImagePicker picker = ImagePicker();
 
@@ -65,13 +78,25 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   void initState() {
     super.initState();
     // Simulating fetched JSON data
-
+_getCancelReasons();
     var userDataValue = Preferences.getUserDetails();
     if (userDataValue != null) {
       userData = json.decode(userDataValue);
     }
 
     callOrdersPI();
+  }
+   void _getCancelReasons() async {
+    try {
+      // TODO: Replace with your GET API logic
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      cancelReasonsData = GetCancelOrderReasons.fromJson(cancelReasonsJson);
+
+      setState(() {});
+    } catch (e) {
+      debugPrint("Cancel reasons API error: $e");
+    }
   }
 
   void submitOrdersPI() async {
@@ -85,7 +110,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         .toList();
     var finalData = {
       "job_calender_id": widget.order["id"],
-      "payment_type": _selectedPaymentIndex==0?"phonepay":"cash",
+      "payment_type": _selectedPaymentIndex == 0 ? "phonepay" : "cash",
       "travelling_charges": "50",
       "add_extra_charges": amounts,
       "reason_for_extracharges": labels,
@@ -143,7 +168,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         "provider_id": "4434",
         "images[]": combinedList,
         "service_id": servicesData[i]["service_id"],
-        'order_id': "12",
+        'order_id': widget.order["id"],
       });
 
       finalServices.add(
@@ -234,6 +259,86 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               _isloaderservice = true;
             });
             ;
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  void callVerifyAPI(code) async {
+    print(widget.order);
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.verifyCode, {
+        "order_id": widget.order["id"],
+        "code": code,
+      }).then((value) async {
+        UtilClass.hideProgress();
+
+        dynamic parsed = await json.decode(value);
+        try {
+          if (parsed["status"] == true) {
+            setState(() {
+              _isVerified = true;
+            });
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+ void callCancelAPI(code) async {
+    print(widget.order);
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.cancelOrders, {
+        "order_id": widget.order["id"],
+       
+      }).then((value) async {
+        UtilClass.hideProgress();
+
+        dynamic parsed = await json.decode(value);
+        try {
+          if (parsed["status"] == true) {
+           _showCancelRequestPopup(context);
+            
+
+
+             Future.delayed(const Duration(seconds: 2), () {
+              Navigator.pushNamed(
+              // ignore: use_build_context_synchronously
+              context,
+              Config.myOrdersRouteName,
+            );
+            });
+            
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -486,7 +591,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          _showCancelRequestPopup(context);
+                          _showCancelReasonSheet(context, cancelReasonsData);
+
+                          // callCancelAPI("");
+                          // ;
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
@@ -624,37 +732,37 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// LEFT COLUMN (Image + Status)
-          Column(
-            children: [
-              // ClipRRect(
-              //   borderRadius: BorderRadius.circular(12),
-              //   child: Image.network(
-              //     orderData["imageUrl"],
-              //     width: size.width * 0.2,
-              //     height: size.width * 0.2,
-              //     fit: BoxFit.cover,
-              //   ),
-              // ),
-              SizedBox(height: size.height * 0.01),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  orderDetails["status"],
-                  style: const TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          // Column(
+          //   children: [
+          //     // ClipRRect(
+          //     //   borderRadius: BorderRadius.circular(12),
+          //     //   child: Image.network(
+          //     //     orderData["imageUrl"],
+          //     //     width: size.width * 0.2,
+          //     //     height: size.width * 0.2,
+          //     //     fit: BoxFit.cover,
+          //     //   ),
+          //     // ),
+          //     SizedBox(height: size.height * 0.01),
+          //     Container(
+          //       padding: const EdgeInsets.symmetric(
+          //         horizontal: 12,
+          //         vertical: 6,
+          //       ),
+          //       decoration: BoxDecoration(
+          //         color: Colors.blue.shade100,
+          //         borderRadius: BorderRadius.circular(20),
+          //       ),
+          //       child: Text(
+          //         orderDetails["status"],
+          //         style: const TextStyle(
+          //           color: Colors.blue,
+          //           fontWeight: FontWeight.w500,
+          //         ),
+          //       ),
+          //     ),
+          //   ],
+          // ),
           SizedBox(width: size.width * 0.04),
 
           /// RIGHT COLUMN (Details + Price + Icon)
@@ -669,8 +777,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                 Text(
+                  "Status: ${orderDetails["status"]}",
+                  style: TextStyle(
+                    fontSize: size.width * 0.045,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 Text(
-                  "Order id: ${orderDetails["id"]}",
+                  "Order id: ${orderDetails["order_txn"]}",
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -724,7 +839,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "₹${orderDetails["total_amount"]}",
+                      "₹${orderDetails["sub_total"]}",
                       style: TextStyle(
                         fontSize: size.width * 0.045,
                         fontWeight: FontWeight.bold,
@@ -776,9 +891,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               onPressed: _isVerified
                   ? null
                   : () {
-                      setState(() {
-                        _isVerified = true;
-                      });
+                      callVerifyAPI(_orderCodeController.text);
                       print("Order Code: ${_orderCodeController.text}");
                     },
               style: ElevatedButton.styleFrom(
@@ -818,14 +931,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
           SizedBox(height: size.height * 0.01),
           Text(
-            "Name: ${widget.order["name"]}",
+            "Name: ${orderDetails["name"]}",
             style: TextStyle(fontSize: size.width * 0.04),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Phone Number: ${widget.order["phone_number"]}",
+                "Phone Number: ${orderDetails["phone_number"]}",
                 style: TextStyle(fontSize: size.width * 0.04),
               ),
               const Icon(Icons.call, color: Colors.green, size: 20.0),
@@ -835,7 +948,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Email: ${widget.order["email"]}",
+                "Email: ${orderDetails["email"]}",
                 style: TextStyle(fontSize: size.width * 0.04),
               ),
               const Icon(Icons.email, color: Colors.green, size: 20.0),
@@ -867,10 +980,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 onPressed: _isVerified
                     ? null
                     : () {
-                        setState(() {
-                          _isVerified = true;
-                        });
-                        print("Order Code: ${_orderCodeController.text}");
+                        callVerifyAPI(_orderCodeController.text);
+                      print("Order Code: ${_orderCodeController.text}");
+                     
                       },
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
@@ -903,6 +1015,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   /// Price Details
   Widget _buildPriceDetails(Size size, double totalAmount) {
+
+double sum = 0;
+    for (var i=0; i<servicesData.length; i++) {
+       sum = sum +  double.parse(servicesData[i]["discount"])?? 0.0;
+}
+
+  
     return Container(
       padding: EdgeInsets.all(size.width * 0.04),
       decoration: BoxDecoration(
@@ -923,9 +1042,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           // Each service price
           Column(
             children: servicesData.map((service) {
+              double price = double.parse(service["price"])+ double.parse(service["discount"])?? 0.0;
               return _priceRow(
                 service["service_name"],
-                double.parse(service["price"]),
+                price,
               );
             }).toList(),
           ),
@@ -942,6 +1062,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ),
 
           _priceRow("Extra Service charge", null, isAdd: true),
+           
+         _priceRow(
+                 'Discount',
+                 sum,
+                ),
           // _priceRow("Traveling Charge", _parseDouble(orderData["travelingCharge"])),
           const Divider(),
           _priceRow("Total Amount", totalAmount, isBold: true),
@@ -1399,5 +1524,244 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
+
+  void _showCancelReasonSheet(
+    BuildContext context,
+    GetCancelOrderReasons? getCancelReasons,
+  ) {
+
+
+    
+    if (getCancelReasons == null || getCancelReasons.cancelReasons.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Cancel reasons not available")),
+      );
+      return;
+    }
+
+    int? _selectedReason;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        final width = MediaQuery.of(context).size.width;
+        final height = MediaQuery.of(context).size.height;
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: width * 0.06,
+                right: width * 0.06,
+                top: height * 0.02,
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+
+                  Text(
+                    "Why do you want to cancel order?",
+                    style: TextStyle(
+                      fontSize: width * 0.05,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: height * 0.005),
+                  Text(
+                    "Please provide the reason",
+                    style: TextStyle(
+                      fontSize: width * 0.04,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  Divider(),
+
+                  ...getCancelReasons.cancelReasons.map((reason) {
+                    return ListTile(
+                      dense: true,
+                      title: Text(reason.reason),
+                      trailing: Radio<int>(
+                        value: int.parse(reason.id),
+                        groupValue: _selectedReason,
+                        activeColor: Colors.orange,
+                        onChanged: (val) {
+                          setSheetState(() {
+                            _selectedReason = val;
+                          });
+                        },
+                      ),
+                    );
+                  }),
+
+                  SizedBox(height: height * 0.02),
+
+                  ElevatedButton(
+                    onPressed: _selectedReason == null
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+
+                            int lastId = int.parse(
+                              getCancelReasons.cancelReasons.last.id,
+                            );
+
+                            if (_selectedReason == lastId) {
+                              _showCustomCancelReasonPopup(
+                                context,
+                                _selectedReason!,
+                              );
+                            } else {
+                              final selectedText = getCancelReasons
+                                  .cancelReasons
+                                  .firstWhere(
+                                    (r) => int.parse(r.id) == _selectedReason,
+                                  )
+                                  .reason;
+
+                              _ConfirmCancellation(
+                                _selectedReason!,
+                                selectedText,
+                                "123",
+                              );
+                            }
+                          },
+                    child: Text("Cancel Plan"),
+                  ),
+
+                  SizedBox(height: height * 0.03),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCustomCancelReasonPopup(
+    BuildContext context,
+    int selectedReasonId,
+  ) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
+    final TextEditingController reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(width * 0.05),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Please write reason",
+                  style: TextStyle(
+                    fontSize: width * 0.045,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: height * 0.02),
+
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextField(
+                    controller: reasonController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: "Write here",
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.all(10),
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: height * 0.03),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final text = reasonController.text.trim();
+
+                      if (text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Please enter a reason"),
+                          ),
+                        );
+                        return;
+                      }
+
+                      Navigator.pop(context);
+
+                      _ConfirmCancellation(
+                        selectedReasonId,
+                        text,
+                        "",
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                    ),
+                    child: Text("Cancel"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+ 
+void _ConfirmCancellation(
+      int reasonId, String reasonText, String jobCalendarId) async {
+    try {
+      debugPrint("📌 Cancel API Called:");
+      debugPrint("Reason ID: $reasonId");
+      debugPrint("Reason: $reasonText");
+      debugPrint("Job Calendar ID: $jobCalendarId");
+
+      // TODO: Replace with real API
+      await Future.delayed(const Duration(seconds: 1));
+      _showCancelRequestPopup(context);
+
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Order Cancelled Successfully")),
+      // );
+    } catch (e) {
+      debugPrint("Cancel API Error: $e");
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Failed to cancel order")));
+    }
+  }
+  //cancel order
+  
+
+ 
   //services end
 }
