@@ -10,6 +10,7 @@ import '../../models/cancel_reasons.dart';
 import '../../components/button.dart';
 import '../../utils/config.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   final dynamic order;
@@ -38,7 +39,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   dynamic userData = {};
   List<Map<String, dynamic>> _extraCharges = [];
   double _extraServiceTotal = 0.0;
-
 
   final Map<String, dynamic> cancelReasonsJson = {
     "cancelReasons": [
@@ -72,13 +72,32 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       });
     }
   }
+
   /////////services end
+  ///
+  Future<void> makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> sendSMS(String phoneNumber, [String? body]) async {
+    final Uri launchUri = Uri(
+      scheme: 'sms',
+      path: phoneNumber,
+      queryParameters: body != null ? {'body': body} : null,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     // Simulating fetched JSON data
-_getCancelReasons();
+    _getCancelReasons();
     var userDataValue = Preferences.getUserDetails();
     if (userDataValue != null) {
       userData = json.decode(userDataValue);
@@ -86,7 +105,8 @@ _getCancelReasons();
 
     callOrdersPI();
   }
-   void _getCancelReasons() async {
+
+  void _getCancelReasons() async {
     try {
       // TODO: Replace with your GET API logic
       await Future.delayed(const Duration(milliseconds: 300));
@@ -165,7 +185,7 @@ _getCancelReasons();
       ];
 
       var formData = FormData.fromMap({
-        "provider_id": "4434",
+        "provider_id": userData["user_id"],
         "images[]": combinedList,
         "service_id": servicesData[i]["service_id"],
         'order_id': widget.order["id"],
@@ -291,7 +311,7 @@ _getCancelReasons();
 
         dynamic parsed = await json.decode(value);
         try {
-          if (parsed["status"] == true) {
+          if (parsed["status"] == "valid") {
             setState(() {
               _isVerified = true;
             });
@@ -312,33 +332,24 @@ _getCancelReasons();
       UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
     }
   }
- void callCancelAPI(code) async {
+
+  void callCancelAPI(text) async {
     print(widget.order);
+    // _showCancelRequestPopup(context);
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.cancelOrders, {
-        "order_id": widget.order["id"],
-       
+        "job_calender_id": widget.order["id"],
+        'cancel_reason': text,
       }).then((value) async {
         UtilClass.hideProgress();
 
         dynamic parsed = await json.decode(value);
         try {
-          if (parsed["status"] == true) {
-           _showCancelRequestPopup(context);
-            
-
-
-             Future.delayed(const Duration(seconds: 2), () {
-              Navigator.pushNamed(
-              // ignore: use_build_context_synchronously
-              context,
-              Config.myOrdersRouteName,
-            );
-            });
-            
+          if (parsed["status"] == 'valid') {
+            _showCancelRequestPopup(context);
           } else {
             // ignore: use_build_context_synchronously
             UtilClass.showAlertDialog(
@@ -470,15 +481,23 @@ _getCancelReasons();
 
                           const SizedBox(height: 25),
 
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: _buildUploadImageTitle(size),
+                          Visibility(
+                            visible:
+                                orderDetails["order_status"] == "Scheduled",
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: _buildUploadImageTitle(size),
+                            ),
                           ),
 
                           const SizedBox(height: 15),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: _imageUploadSection(size),
+                          Visibility(
+                            visible:
+                                orderDetails["order_status"] == "Scheduled",
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: _imageUploadSection(size),
+                            ),
                           ),
 
                           const SizedBox(height: 15),
@@ -499,7 +518,14 @@ _getCancelReasons();
                       // Navigator.of(context).pushReplacementNamed(
                       //   Config.jobCalendarRouteName,
                       // );
-
+                      if (!_isVerified) {
+                        UtilClass.showAlertDialog(
+                          // ignore: use_build_context_synchronously
+                          context: context,
+                          message: "Code verification not completed",
+                        );
+                        return;
+                      }
                       submitOrdersPI();
                     },
                     child: Text(
@@ -682,10 +708,14 @@ _getCancelReasons();
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
-                      // close popup
-                      // Navigator.pushReplacementNamed(context, '/nextScreen');
-                      // Replace '/nextScreen' with your actual screen route
+                      // Navigator.pop(context);
+                      Future.delayed(const Duration(seconds: 1), () {
+                        Navigator.pushNamed(
+                          // ignore: use_build_context_synchronously
+                          context,
+                          Config.myOrdersRouteName,
+                        );
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00A651), // green
@@ -777,10 +807,10 @@ _getCancelReasons();
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                 Text(
-                  "Status: ${orderDetails["status"]}",
+                Text(
+                  "Status: ${orderDetails["order_status"]}",
                   style: TextStyle(
-                    fontSize: size.width * 0.045,
+                    color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -845,11 +875,11 @@ _getCancelReasons();
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Icon(
-                      Icons.navigation,
-                      color: Colors.orange,
-                      size: 28,
-                    ),
+                    // const Icon(
+                    //   Icons.navigation,
+                    //   color: Colors.orange,
+                    //   size: 28,
+                    // ),
                   ],
                 ),
               ],
@@ -875,13 +905,16 @@ _getCancelReasons();
         SizedBox(height: size.height * 0.01),
         Row(
           children: [
-            Expanded(
-              child: TextField(
-                controller: _orderCodeController,
-                decoration: InputDecoration(
-                  hintText: "Enter code",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Visibility(
+              visible: orderDetails["order_status"] == "Scheduled",
+              child: Expanded(
+                child: TextField(
+                  controller: _orderCodeController,
+                  decoration: InputDecoration(
+                    hintText: "Enter code",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -941,7 +974,13 @@ _getCancelReasons();
                 "Phone Number: ${orderDetails["phone_number"]}",
                 style: TextStyle(fontSize: size.width * 0.04),
               ),
-              const Icon(Icons.call, color: Colors.green, size: 20.0),
+              IconButton(
+                icon: const Icon(Icons.call,color: Colors.green, size: 20.0),
+                onPressed: () {
+                  // Perform an action when the button is pressed
+                  makePhoneCall(orderDetails["phone_number"]??"9876543210");
+                },
+              ),
             ],
           ),
           Row(
@@ -951,7 +990,13 @@ _getCancelReasons();
                 "Email: ${orderDetails["email"]}",
                 style: TextStyle(fontSize: size.width * 0.04),
               ),
-              const Icon(Icons.email, color: Colors.green, size: 20.0),
+             IconButton(
+                icon: const Icon(Icons.email,color: Colors.green, size: 20.0),
+                onPressed: () {
+                  // Perform an action when the button is pressed
+                  sendSMS(orderDetails["phone_number"]??"9876543210", 'Hello there! We are from Go buddy');
+                },
+              ),
             ],
           ),
           SizedBox(height: size.height * 0.01),
@@ -962,40 +1007,42 @@ _getCancelReasons();
           ),
 
           SizedBox(height: size.height * 0.01),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _orderCodeController,
-                  decoration: InputDecoration(
-                    hintText: "Enter code",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+          Visibility(
+            visible: orderDetails["order_status"] == "Scheduled",
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _orderCodeController,
+                    decoration: InputDecoration(
+                      hintText: "Enter code",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(width: size.width * 0.03),
-              ElevatedButton(
-                onPressed: _isVerified
-                    ? null
-                    : () {
-                        callVerifyAPI(_orderCodeController.text);
-                      print("Order Code: ${_orderCodeController.text}");
-                     
-                      },
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                SizedBox(width: size.width * 0.03),
+                ElevatedButton(
+                  onPressed: _isVerified
+                      ? null
+                      : () {
+                          callVerifyAPI(_orderCodeController.text);
+                          print("Order Code: ${_orderCodeController.text}");
+                        },
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: _isVerified ? Colors.green : Colors.blue,
                   ),
-                  backgroundColor: _isVerified ? Colors.green : Colors.blue,
+                  child: Text(
+                    _isVerified ? "Verified" : "Verify",
+                    style: const TextStyle(color: Colors.white),
+                  ),
                 ),
-                child: Text(
-                  _isVerified ? "Verified" : "Verify",
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -1015,13 +1062,11 @@ _getCancelReasons();
 
   /// Price Details
   Widget _buildPriceDetails(Size size, double totalAmount) {
+    double sum = 0;
+    for (var i = 0; i < servicesData.length; i++) {
+      sum = sum + double.parse(servicesData[i]["discount"]) ?? 0.0;
+    }
 
-double sum = 0;
-    for (var i=0; i<servicesData.length; i++) {
-       sum = sum +  double.parse(servicesData[i]["discount"])?? 0.0;
-}
-
-  
     return Container(
       padding: EdgeInsets.all(size.width * 0.04),
       decoration: BoxDecoration(
@@ -1042,11 +1087,11 @@ double sum = 0;
           // Each service price
           Column(
             children: servicesData.map((service) {
-              double price = double.parse(service["price"])+ double.parse(service["discount"])?? 0.0;
-              return _priceRow(
-                service["service_name"],
-                price,
-              );
+              double price =
+                  double.parse(service["price"]) +
+                      double.parse(service["discount"]) ??
+                  0.0;
+              return _priceRow(service["service_name"], price);
             }).toList(),
           ),
 
@@ -1062,31 +1107,31 @@ double sum = 0;
             ),
 
           _priceRow("Extra Service charge", null, isAdd: true),
-           
-         _priceRow(
-                 'Discount',
-                 sum,
-                ),
+
+          _priceRow('Discount', sum),
           // _priceRow("Traveling Charge", _parseDouble(orderData["travelingCharge"])),
           const Divider(),
           _priceRow("Total Amount", totalAmount, isBold: true),
           SizedBox(height: size.height * 0.02),
-          Container(
-            padding: EdgeInsets.all(size.width * 0.04),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Payment via",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                _paymentOption(0, "Payment via PhonePe"),
-                _paymentOption(1, "By hand cash"),
-              ],
+          Visibility(
+            visible: orderDetails["order_status"] == "Scheduled",
+            child: Container(
+              padding: EdgeInsets.all(size.width * 0.04),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Payment via",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  _paymentOption(0, "Payment via PhonePe"),
+                  _paymentOption(1, "By hand cash"),
+                ],
+              ),
             ),
           ),
         ],
@@ -1499,39 +1544,38 @@ double sum = 0;
 
   // ---------------- ACTION BUTTONS ----------------
   Widget _buildActionButtons(Size size) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () {
-              _showCancelDialog(context);
-            },
-            child: const Text(
-              "Cancel Service",
-              style: TextStyle(color: Colors.red),
+    return Visibility(
+      visible: orderDetails["order_status"] == "Scheduled",
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () {
+                _showCancelDialog(context);
+              },
+              child: const Text(
+                "Cancel Service",
+                style: TextStyle(color: Colors.red),
+              ),
             ),
           ),
-        ),
-        SizedBox(width: 12),
-        // Expanded(
-        //   child: ElevatedButton(
-        //     style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-        //     onPressed: () {},
-        //     child: const Text("Service Completed"),
-        //   ),
-        // ),
-      ],
+          SizedBox(width: 12),
+          // Expanded(
+          //   child: ElevatedButton(
+          //     style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          //     onPressed: () {},
+          //     child: const Text("Service Completed"),
+          //   ),
+          // ),
+        ],
+      ),
     );
   }
-
 
   void _showCancelReasonSheet(
     BuildContext context,
     GetCancelOrderReasons? getCancelReasons,
   ) {
-
-
-    
     if (getCancelReasons == null || getCancelReasons.cancelReasons.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Cancel reasons not available")),
@@ -1717,11 +1761,7 @@ double sum = 0;
 
                       Navigator.pop(context);
 
-                      _ConfirmCancellation(
-                        selectedReasonId,
-                        text,
-                        "",
-                      );
+                      _ConfirmCancellation(selectedReasonId, text, "");
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
@@ -1737,31 +1777,36 @@ double sum = 0;
     );
   }
 
- 
-void _ConfirmCancellation(
-      int reasonId, String reasonText, String jobCalendarId) async {
+  void _ConfirmCancellation(
+    int reasonId,
+    String reasonText,
+    String jobCalendarId,
+  ) async {
     try {
       debugPrint("📌 Cancel API Called:");
       debugPrint("Reason ID: $reasonId");
       debugPrint("Reason: $reasonText");
       debugPrint("Job Calendar ID: $jobCalendarId");
 
+      callCancelAPI(reasonText);
+
+      //_showCancelRequestPopup(context);
+
       // TODO: Replace with real API
-      await Future.delayed(const Duration(seconds: 1));
-      _showCancelRequestPopup(context);
+      // await Future.delayed(const Duration(seconds: 1));
+      // _showCancelRequestPopup(context);
 
       // ScaffoldMessenger.of(context).showSnackBar(
       //   SnackBar(content: Text("Order Cancelled Successfully")),
       // );
     } catch (e) {
       debugPrint("Cancel API Error: $e");
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Failed to cancel order")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Failed to cancel order")));
     }
   }
   //cancel order
-  
 
- 
   //services end
 }

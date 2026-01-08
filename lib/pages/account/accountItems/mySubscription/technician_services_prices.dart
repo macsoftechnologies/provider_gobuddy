@@ -652,6 +652,10 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
                                         borderRadius: BorderRadius.circular(6),
                                         child: Image.network(
                                           "https://admin.gobuddyindia.com//assets//images//${subcatDetails[index]["sub_image"]}",
+                                          errorBuilder: (context, error, stackTrace) {
+                // Returns this widget if the image fails to load
+                return const Icon(Icons.broken_image, size: 50);
+              },
                                           height: deviceHeight * 0.10,
                                           width: deviceHeight * 0.10,
                                           fit: BoxFit.cover,
@@ -934,6 +938,10 @@ class _TechnicianServicesPricesState extends State<TechnicianServicesPrices> {
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
               "https://admin.gobuddyindia.com//assets//images//$imageUrl",
+              errorBuilder: (context, error, stackTrace) {
+                // Returns this widget if the image fails to load
+                return const Icon(Icons.broken_image, size: 50);
+              },
               height: deviceHeight * 0.1,
               width: deviceWidth * 0.2,
               fit: BoxFit.cover,

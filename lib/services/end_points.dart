@@ -49,7 +49,8 @@ class EndPoints {
        static const String addImages = "${newbaseUrl}add_provider_gallery";
        static const String submitDetails = "${newbaseUrl}orderchargessubmitted";
        static const String verifyCode = "${newbaseUrl}verify_code";
-       static const String cancelOrders = "${newbaseUrl}cancelorders";
+       static const String cancelOrders = "${newbaseUrl}providercancelorder";
+        static const String orderaccept = "${newbaseUrl}orderaccept";
 
       
 

@@ -134,20 +134,18 @@ callOrdersPI(selectType);
     timer?.cancel();
     super.dispose();
   }
-
-
-  void callOrdersPI(tab) async {
+void callOrdersPI(tab) async {
     var internet = await UtilClass.checkInternet();
     if (internet) {
       // ignore: use_build_context_synchronously
       UtilClass.showProgress(context: context);
       await Repository.postApiService(EndPoints.getOrders, {
-            "user_id": userData["user_id"] ?? "4361",
+            "user_id":userData["user_id"] ?? "4361",
              "status": tab.toLowerCase() ?? "pending",
           }).then((value) async {
         UtilClass.hideProgress();
          
-        dynamic parsed = await json.decode(value);
+        dynamic parsed = value;
         try {
         
           if (parsed["status"] == "valid") {
@@ -157,6 +155,50 @@ callOrdersPI(selectType);
               selectType = tab.toLowerCase();
               orders = parsed["data"];
             });
+
+          
+          } else {
+            // ignore: use_build_context_synchronously
+            UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          }
+        } catch (e) {
+          print(e);
+        }
+       
+      });
+    } else {
+      // ignore: use_build_context_synchronously
+      UtilClass.showAlertDialog(context: context, message: Config.kNoInternet);
+    }
+  }
+
+  void callAcceptAPI(id) async {
+    var internet = await UtilClass.checkInternet();
+    if (internet) {
+      // ignore: use_build_context_synchronously
+      UtilClass.showProgress(context: context);
+      await Repository.postApiService(EndPoints.orderaccept, {
+            "job_calender_id":id ,
+             "provider_id": userData["user_id"],
+          }).then((value) async {
+        UtilClass.hideProgress();
+         
+        dynamic parsed = json.decode(value);
+        
+        try {
+        
+          if (parsed["status"] == "valid") {
+          
+             UtilClass.showAlertDialog(
+              // ignore: use_build_context_synchronously
+              context: context,
+              message: parsed["message"],
+            );
+          callOrdersPI("Open");
 
           
           } else {
@@ -423,39 +465,46 @@ callOrdersPI(selectType);
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(children: [
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.black,
-              side: const BorderSide(color: Colors.black26),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-            ),
-            onPressed: () {},
-            child: const Text("Cancel"),
-          ),
+          // OutlinedButton(
+          //   style: OutlinedButton.styleFrom(
+          //     foregroundColor: Colors.black,
+          //     side: const BorderSide(color: Colors.black26),
+          //     shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(20)),
+          //   ),
+          //   onPressed: () {},
+          //   child: const Text("Cancel"),
+          // ),
           const SizedBox(width: 8),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: expired ? Colors.grey : Colors.green,
+              // backgroundColor: expired ? Colors.grey : Colors.green,
+               backgroundColor:  Colors.green,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
             ),
-            onPressed: expired ? null : () {},
+            // onPressed: expired ? null : () {},\
+             onPressed:  () {
+
+              callAcceptAPI(order["id"]);
+
+             },
             child: const Text("Accept"),
           ),
         ]),
-        expired
-            ? const Text("Expired",
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
-            : Row(
+        // expired
+        //     ? const Text("Expired",
+        //     style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
+        //     : 
+            Row(
           children: [
-            const Icon(Icons.timer, color: Colors.orange, size: 18),
-            const SizedBox(width: 4),
-            Text(timeLeft,
-                style: const TextStyle(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.w500)),
+            // const Icon(Icons.timer, color: Colors.orange, size: 18),
+            // const SizedBox(width: 4),
+            // Text(timeLeft,
+            //     style: const TextStyle(
+            //         color: Colors.orange,
+            //         fontWeight: FontWeight.w500)),
             const SizedBox(width: 12),
             Text("₹ ${order["total_amount"]}",
                 style: const TextStyle(
