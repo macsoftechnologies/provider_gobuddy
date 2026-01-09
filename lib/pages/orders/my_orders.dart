@@ -385,8 +385,8 @@ void callOrdersPI(tab) async {
                         Text("Order Number :  ${order["order_txn"]}",
                             style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.bold)),
-                        Text(  "Services",
-                            style: const TextStyle(color: Colors.grey)),
+                        // Text(  "Services",
+                        //     style: const TextStyle(color: Colors.grey)),
                         const SizedBox(height: 6),
                         Row(
                           children: [

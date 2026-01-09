@@ -1456,11 +1456,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
                 SizedBox(height: 6),
 
-                Text(
-                  "location",
-                  maxLines: 2,
-                  style: TextStyle(fontSize: size.width * 0.035),
-                ),
+                // Text(
+                //   "location",
+                //   maxLines: 2,
+                //   style: TextStyle(fontSize: size.width * 0.035),
+                // ),
 
                 SizedBox(height: 8),
 
